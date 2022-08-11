@@ -1,0 +1,59 @@
+{
+  "name": "mo-vm",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "vite --port 3000",
+    "build:frontend": "vite build",
+    "build": "npm run build:frontend",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "deploy": "npm run test && npm run build && netlify deploy --dir=dist",
+    "deploy:prod": "npm run test && npm run build && netlify deploy --dir=dist --prod",
+    "prepare": "husky install",
+    "precommit": "lint-staged"
+  },
+  "dependencies": {
+    "@testing-library/jest-dom": "5.15.0",
+    "@testing-library/react": "12.1.2",
+    "@testing-library/user-event": "13.5.0",
+    "@types/react": "18.0.15",
+    "@types/react-dom": "18.0.6",
+    "bs58": "5.0.0",
+    "classnames": "2.3.1",
+    "copy-to-clipboard": "3.3.1",
+    "highlight.js": "11.6.0",
+    "motoko": "2.0.3",
+    "react": "17.0.2",
+    "react-device-detect": "2.2.2",
+    "react-dom": "17.0.2",
+    "react-icons": "4.4.0",
+    "react-syntax-highlighter": "15.5.0",
+    "react-tooltip": "4.2.21"
+  },
+  "devDependencies": {
+    "@netlify/functions": "1.0.0",
+    "@vitejs/plugin-react": "2.0.0",
+    "autoprefixer": "10.4.8",
+    "cross-env": "7.0.3",
+    "eslint": "8.20.0",
+    "eslint-config-react-app": "7.0.1",
+    "husky": "8.0.1",
+    "jsdom": "20.0.0",
+    "lint-staged": "13.0.3",
+    "netlify": "12.0.0",
+    "prettier": "2.7.1",
+    "sass": "1.54.0",
+    "tailwindcss": "3.1.6",
+    "vite": "3.0.4",
+    "vite-imagetools": "4.0.4",
+    "vitest": "0.20.2",
+    "web-vitals": "2.1.4"
+  },
+  "lint-staged": {
+    "src/**/*.{js,ts,jsx,tsx}": [
+      "eslint --max-warnings=0 --fix",
+      "prettier --write"
+    ]
+  }
+}

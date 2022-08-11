@@ -1,0 +1,123 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import 'partials/variables';
+@import 'partials/hljs';
+
+@import 'landingPage';
+
+$button-size: 44px;
+$button-border-width: 3px;
+
+$embed-button-color: #555360;
+$embed-button-emphasized-color: darken(#29abe2, 5);
+
+html,
+body {
+  font-family: 'Nunito';
+}
+
+.output {
+  background-color: #2a2a2a;
+  color: white;
+
+  pre {
+    white-space: pre-wrap;
+  }
+}
+
+@keyframes breathe {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(1.05);
+  }
+  // 70% {
+  //   transform: scale(.95);
+  // }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.button-wrapper {
+  transition: 0.1s all ease-out;
+  transition-property: transform background-color width height;
+  padding: 2px;
+  // background: #222;
+  background: $embed-button-color;
+  color: $embed-button-color;
+  border-radius: 50%;
+  cursor: pointer;
+  width: $button-size;
+  height: $button-size;
+
+  &.emphasized {
+    background: $embed-button-emphasized-color;
+    color: $embed-button-emphasized-color;
+    animation: breathe 5s ease-in-out infinite;
+  }
+
+  &:hover {
+    // color: darkblue;
+    // border-color: darkblue; // Fallback
+    // border-color: $ic-gradient;
+    // background: $ic-gradient;
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(1.1);
+    transition-duration: 0.05s;
+
+    .button {
+      background: white;
+    }
+  }
+
+  .button {
+    // padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.97);
+    width: $button-size - $button-border-width * 2;
+    height: $button-size - $button-border-width * 2;
+    border-radius: 50%;
+    // border: solid 2px #222;
+  }
+}
+
+// ::selection {
+//   background: #555;
+// }
+
+.code-editor {
+  counter-reset: line;
+  overflow-x: auto !important;
+
+  .code-area {
+    outline: none;
+    padding-left: 50px !important;
+  }
+
+  pre {
+    padding-left: 50px !important;
+  }
+
+  .code-area,
+  pre {
+    white-space: pre !important;
+    word-wrap: normal !important;
+  }
+
+  .line-number {
+    position: absolute;
+    left: 0px;
+    color: #cccccc;
+    text-align: right;
+    width: 30px;
+    font-weight: 100;
+  }
+}
