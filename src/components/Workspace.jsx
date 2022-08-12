@@ -79,7 +79,7 @@ export default function Workspace() {
     <>
       <div className="min-h-screen flex flex-col pt-8 items-center gap-4">
         <div className="p-4 w-full max-w-[640px] flex flex-col justify-center items-center">
-          <h1 className="opacity-50 md:px-5 text-5xl text-center lowercase font-light select-none tracking-wide">
+          <h1 className="opacity-70 md:px-5 text-5xl text-center lowercase font-light select-none tracking-wide">
             mo vm
           </h1>
           <hr className="w-full mb-3" />
@@ -96,22 +96,23 @@ export default function Workspace() {
           <div className="w-full">
 
             <div className='flex gap-2 items-center'>
-              <Button onClick={() => backward()}>
+              <div className='text-lg opacity-70 overflow-x-auto flex-1'>
+                {(!!end || !!selectedCore?.cont) && (
+                  <pre className={end ? 'text-red-800' : 'text-black'}>
+                    <span className='text-blue-800'>[{index}]</span> {JSON.stringify(end || selectedCore.cont)}
+                  </pre>
+                )}
+              </div>
+                <Button onClick={() => backward()}>
                 <FaCaretLeft />
               </Button>
               <Button onClick={() => forward()}>
                 <FaCaretRight />
               </Button>
-              <div className='text-lg opacity-70 overflow-x-auto'>
-                {(!!end || !!selectedCore?.cont) && (
-                  <pre className={end ? 'text-orange' : 'text-black'}>
-                    {JSON.stringify(end || selectedCore.cont)}
-                  </pre>
-                )}
-              </div>
             </div>
 
           </div>
+          <hr className='w-full m-4'/>
           <div className='w-full flex'>
             {/* <div className='flex flex-col-reverse gap-4'>
               {history.map((core, i) => (
