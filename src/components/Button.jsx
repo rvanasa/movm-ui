@@ -7,19 +7,12 @@ export default function Button({ tooltip, className, children, ...others }) {
 
   return (
     <div
-      className={classNames(
-        'button-wrapper flex justify-center items-center',
-        className,
-      )}
+      className={classNames('inline-flex justify-center items-center p-3 bg-[#0008] hover:bg-[#000a] text-white text-xl rounded cursor-pointer select-none', className)}
+      data-tip={tooltip || undefined}
+      data-place="left"
       {...others}
     >
-      <div
-        className="button flex justify-center items-center"
-        data-tip={tooltip || undefined}
-        data-place="left"
-      >
-        {children}
-      </div>
+      {children}
     </div>
   );
 }

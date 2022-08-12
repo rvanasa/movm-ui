@@ -1,14 +1,12 @@
 import React from 'react';
 import ReactTooltip from 'react-tooltip';
-import isEmbedded from '../utils/isEmbedded';
-import Embed from './Embed';
-import LandingPage from './LandingPage';
+import Workspace from './Workspace';
 
 export default function App() {
   return (
     <>
       <ReactTooltip />
-      <Workspace/>
+      <Workspace />
     </>
   );
 }

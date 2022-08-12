@@ -1,8 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { imagetools } from 'vite-imagetools';
+import wasmPack from 'vite-plugin-wasm-pack';
+import topLevelAwait from 'vite-plugin-top-level-await';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), imagetools()],
+  plugins: [
+    react(),
+    imagetools(),
+    topLevelAwait(),
+    wasmPack('./rust'),
+  ],
 });
