@@ -14,8 +14,8 @@ use motoko::vm_types::Core;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 lazy_static! {
-    #[wasm_bindgen]
     #[no_mangle]
+    #[wasm_bindgen]
     static ref HISTORY: Mutex<Vec<SendWrapper<Core>>> = Mutex::new(vec![]);
 }
 

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@200;400;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -15,7 +15,7 @@ $embed-button-emphasized-color: darken(#29abe2, 5);
 
 html,
 body {
-  font-family: 'Poppins';
+  font-family: 'Kanit';
   // background: #222;
   // color: #fff;
 }

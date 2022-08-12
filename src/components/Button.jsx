@@ -7,7 +7,10 @@ export default function Button({ tooltip, className, children, ...others }) {
 
   return (
     <div
-      className={classNames('inline-flex justify-center items-center p-3 bg-[#0008] hover:bg-[#000a] text-white text-xl rounded cursor-pointer select-none', className)}
+      className={classNames(
+        'inline-flex justify-center items-center p-3 bg-[#000a] hover:bg-[#000c] text-white text-xl rounded cursor-pointer select-none',
+        className,
+      )}
       data-tip={tooltip || undefined}
       data-place="left"
       {...others}
