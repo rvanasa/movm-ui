@@ -1,5 +1,5 @@
-import init from '../rust/pkg';
+import init, * as rust from '../rust/pkg/rust';
 
-window.vm_input = () => window.__input
+await init();
 
-export default await init();
+export default rust;

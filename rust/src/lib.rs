@@ -14,30 +14,25 @@ use motoko::vm_types::Core;
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
 lazy_static! {
-    #[no_mangle]
     #[wasm_bindgen]
     static ref HISTORY: Mutex<Vec<SendWrapper<Core>>> = Mutex::new(vec![]);
 }
 
-#[no_mangle]
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
 
-    fn history_callback(s: &str);
-    fn end_callback(s: &str);
-    fn vm_input() -> String;
+    // fn history_callback(s: &str);
+    // fn end_callback(s: &str);
 }
 
-#[no_mangle]
 #[wasm_bindgen(start)]
 pub fn start() {
     #[cfg(feature = "console_error_panic_hook")]
     console_error_panic_hook::set_once();
 }
 
-#[no_mangle]
 #[wasm_bindgen]
 pub fn set_input(input: &str) {
     let prog = parse(&input).expect("Unable to parse file");
@@ -49,16 +44,15 @@ pub fn set_input(input: &str) {
     history.push(SendWrapper::new(core));
 }
 
-#[no_mangle]
 #[wasm_bindgen]
-pub fn forward() {
+pub fn forward() -> Option<String> {
     let history = &mut *HISTORY.lock().unwrap();
 
     if !history.is_empty() {
         let mut core = history[history.len() - 1].clone();
         match core_step(
             &mut core,
-            &motoko::vm::Limits {
+            &motoko::vm_types::Limits {
                 step: None,
                 stack: None,
                 call: None,
@@ -66,13 +60,17 @@ pub fn forward() {
                 send: None,
             },
         ) {
-            Ok(_) => history.push(core),
-            Err(err) => end_callback(&serde_json::to_string(&err).unwrap()),
-        };
+            Ok(_) => {
+                history.push(core);
+                None
+            }
+            Err(end) => Some(serde_json::to_string(&end).unwrap()),
+        }
+    } else {
+        None
     }
 }
 
-#[no_mangle]
 #[wasm_bindgen]
 pub fn backward() {
     let history = &mut *HISTORY.lock().unwrap();
@@ -82,26 +80,11 @@ pub fn backward() {
     }
 }
 
-#[no_mangle]
 #[wasm_bindgen]
 pub fn history() -> String {
     let history = &mut *HISTORY.lock().unwrap();
 
-    // log(&format!("{:?}", history));
-
     let result = &history.iter().map(|c| c.clone().take()).collect::<Vec<_>>();
 
-    // log(&format!("{}", serde_json::to_string(result).unwrap()));
-
-    history_callback(&format!("{}", serde_json::to_string(result).unwrap()));
-
     serde_json::to_string(result).unwrap()
-}
-
-#[no_mangle]
-#[wasm_bindgen]
-pub fn test(s: &str) -> String {
-    log(&format!(">>>>>> {}", s));
-
-    "AAAA".to_string()
 }

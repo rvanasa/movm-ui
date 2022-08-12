@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
@@ -23,31 +23,13 @@ export default function Workspace() {
 
   const selectedCore = history[Math.min(index, history.length - 1)];
 
-  useMemo(() => {
-    setEnd(null);
+  console.log(history, end); ///
 
+  const notify = useCallback(() => {
     try {
-      const input = preprocessMotoko(code);
-      rust.set_input(input);
-    } catch (err) {
-      try {
-        console.error(err);
-      } catch (err) {
-        console.error('Unable to update input');
-      }
-    }
-  }, [code]);
-
-  window.history_callback = (s) => {
-    const history = JSON.parse(s);
-    setHistory(history);
-    setIndex(history.length - 1);
-  }; // temp
-  window.end_callback = (s) => setEnd(JSON.parse(end)); // temp
-
-  const notify = () => {
-    try {
-      rust.history();
+      const history = JSON.parse(rust.history());
+      setIndex(history.length - 1);
+      setHistory(history);
     } catch (err) {
       try {
         console.error(err);
@@ -55,7 +37,28 @@ export default function Workspace() {
         console.error('Unable to fetch history');
       }
     }
-  };
+  }, []);
+
+  useMemo(() => {
+    try {
+      const input = preprocessMotoko(code);
+      const end = rust.set_input(input.code);
+      setEnd(end && JSON.parse(end));
+      notify();
+    } catch (err) {
+      try {
+        console.error(err);
+      } catch (err) {
+        console.error('Unable to update input');
+      }
+    }
+  }, [code, notify]);
+
+  // window.history_callback = (s) => {
+  //   const history = JSON.parse(s);
+
+  // }; // temp
+  // window.end_callback = (s) => setEnd(JSON.parse(end)); // temp
 
   const forward = () => {
     rust.forward();
@@ -66,13 +69,6 @@ export default function Workspace() {
     notify();
   };
 
-  useMemo(() => {
-    notify();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [code]);
-
-  console.log(history, end);
-
   const handleChangeCode = (newCode) => {
     setCode(newCode);
   };
@@ -80,8 +76,8 @@ export default function Workspace() {
   return (
     <>
       <div className="min-h-screen flex flex-col pt-8 items-center gap-4">
-        <div className="p-4 w-full max-w-[640px] flex flex-col justify-center items-center">
-          <h1 className="bg-black text-white pt-3 pb-8 opacity-70 md:px-5 text-[100px] text-center lowercase font-extralight select-none leading-[72px] cursor-pointer">
+        <div className="p-4 w-full max-w-[800px] flex flex-col justify-center items-center">
+          <h1 className="bg-black text-white p-3 pt-2 pb-4 opacity-70 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded">
             mo
             <br />
             vm
@@ -100,18 +96,24 @@ export default function Workspace() {
           <div className="w-full">
             <div className="flex gap-2 items-center">
               <div className="text-lg opacity-70 overflow-x-auto flex-1">
-                {(!!end || !!selectedCore?.cont) && (
-                  <pre className={end ? 'text-red-800' : 'text-black'}>
+                {/* {!!(end && index === history.length - 1) && (
+                  <pre className='mr-3'>
+                    <span className="text-red-800">[{index}]</span>{' '}
+                    {JSON.stringify(end)}
+                  </pre>
+                )} */}
+                {!!selectedCore?.cont && (
+                  <pre className={'text-green-800'}>
                     <span className="text-blue-800">[{index}]</span>{' '}
-                    {JSON.stringify(end || selectedCore.cont)}
+                    {JSON.stringify(selectedCore.cont)}
                   </pre>
                 )}
               </div>
               <Button onClick={() => backward()}>
-                <FaCaretLeft />
+                <FaCaretLeft className="mr-[2px]" />
               </Button>
               <Button onClick={() => forward()}>
-                <FaCaretRight />
+                <FaCaretRight className="ml-[2px]" />
               </Button>
             </div>
           </div>
