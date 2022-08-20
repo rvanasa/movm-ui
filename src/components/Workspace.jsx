@@ -5,7 +5,8 @@ import rust from '../rust';
 import { useMemo } from 'react';
 import { FaCaretLeft, FaCaretRight } from 'react-icons/fa';
 import Button from './Button';
-import ReactJson from 'react-json-view';
+import JsonView from 'react-json-view';
+import { useMonaco } from '@monaco-editor/react';
 
 const defaultCode = `
 let a = 1;
@@ -18,16 +19,41 @@ console.log(rust);
 export default function Workspace() {
   const [code, setCode] = useState(defaultCode);
   const [history, setHistory] = useState([]);
-  const [end, setEnd] = useState(null);
+  const [, /* signal */ setSignal] = useState(null);
   const [index, setIndex] = useState(0);
+  const monaco = useMonaco();
 
   const selectedCore = history[Math.min(index, history.length - 1)];
 
-  console.log(history, end); ///
+  // console.log(history, end); ///
+
+  const span = history[history.length - 1]?.cont_source?.span;
+  if (span) {
+    console.log(span.start, span.end);
+    // ref._input.setSelectionRange(span.start, span.end);
+
+    for (const model of monaco.editor.getModels()) {
+      const start = model.getPositionAt(span.start);
+      const end = model.getPositionAt(span.end);
+
+      console.log(start);
+
+      monaco.editor.setModelMarkers(model, 'mo-vm', [
+        {
+          startLineNumber: start.lineNumber,
+          startColumn: start.column,
+          endLineNumber: end.lineNumber,
+          endColumn: end.column,
+          message: 'Most recent value',
+          severity: monaco.MarkerSeverity.Info,
+        },
+      ]);
+    }
+  }
 
   const notify = useCallback(() => {
     try {
-      const history = JSON.parse(rust.history());
+      const history = rust.history();
       setIndex(history.length - 1);
       setHistory(history);
     } catch (err) {
@@ -42,8 +68,8 @@ export default function Workspace() {
   useMemo(() => {
     try {
       const input = preprocessMotoko(code);
-      const end = rust.set_input(input.code);
-      setEnd(end && JSON.parse(end));
+      const signal = rust.set_input(input.code);
+      setSignal(signal);
       notify();
     } catch (err) {
       try {
@@ -53,12 +79,6 @@ export default function Workspace() {
       }
     }
   }, [code, notify]);
-
-  // window.history_callback = (s) => {
-  //   const history = JSON.parse(s);
-
-  // }; // temp
-  // window.end_callback = (s) => setEnd(JSON.parse(end)); // temp
 
   const forward = () => {
     rust.forward();
@@ -85,7 +105,7 @@ export default function Workspace() {
           <hr className="w-full mt-5 mb-3" />
           <div className="w-full py-4">
             <div
-              className="mx-auto rounded overflow-hidden"
+              className="mx-auto h-[300px] rounded overflow-hidden"
               style={{
                 boxShadow: '0 0 20px #CCC',
               }}
@@ -130,10 +150,12 @@ export default function Workspace() {
             </div> */}
             <div className="w-full text-lg">
               {!!selectedCore && (
-                <ReactJson
+                <JsonView
                   src={selectedCore}
+                  // name="core"
+                  name={null}
                   style={{ padding: '1rem' }}
-                ></ReactJson>
+                ></JsonView>
               )}
             </div>
           </div>

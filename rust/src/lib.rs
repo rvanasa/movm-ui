@@ -6,7 +6,6 @@ use send_wrapper::SendWrapper;
 use wasm_bindgen::prelude::*;
 
 use motoko::check::parse;
-use motoko::vm::{core_init, core_step};
 use motoko::vm_types::Core;
 
 #[cfg(feature = "wee_alloc")]
@@ -37,7 +36,7 @@ pub fn start() {
 pub fn set_input(input: &str) {
     let prog = parse(&input).expect("Unable to parse file");
 
-    let core = core_init(prog);
+    let core = Core::new(prog);
 
     let history = &mut *HISTORY.lock().unwrap();
     history.clear();
@@ -50,16 +49,11 @@ pub fn forward() -> Option<String> {
 
     if !history.is_empty() {
         let mut core = history[history.len() - 1].clone();
-        match core_step(
-            &mut core,
-            &motoko::vm_types::Limits {
-                step: None,
-                stack: None,
-                call: None,
-                alloc: None,
-                send: None,
-            },
-        ) {
+        let limits = motoko::vm_types::Limits {
+            step: None,
+            breakpoints: vec![],
+        };
+        match core.step(&limits) {
             Ok(_) => {
                 history.push(core);
                 None
@@ -81,10 +75,11 @@ pub fn backward() {
 }
 
 #[wasm_bindgen]
-pub fn history() -> String {
+pub fn history() -> JsValue {
     let history = &mut *HISTORY.lock().unwrap();
 
     let result = &history.iter().map(|c| c.clone().take()).collect::<Vec<_>>();
 
-    serde_json::to_string(result).unwrap()
+    // serde_json::to_string().unwrap()
+    JsValue::from_serde(result).unwrap()
 }
