@@ -9,7 +9,7 @@
     "build": "run-s build:wasm build:frontend",
     "test:wasm": "wasm-pack test --chrome --firefox --headless rust",
     "test:frontend": "vitest run",
-    "test": "run-s test:wasm test:frontend",
+    "test": "run-s test:frontend test:wasm",
     "deploy": "npm run test && npm run build && netlify deploy --dir=dist",
     "deploy:prod": "npm run test && npm run build && netlify deploy --dir=dist --prod",
     "prepare": "husky install",

@@ -1,4 +1,12 @@
+import { expect, vi } from 'vitest';
 import matchers from '@testing-library/jest-dom/matchers';
-import { expect } from 'vitest';
 
 expect.extend(matchers);
+
+// global.fetch = async () => null as any as Response;
+
+vi.doMock('./rust.ts', () => {
+  return {
+    default: {},
+  };
+});
