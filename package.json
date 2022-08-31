@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "vite --port 3000",
-    "build:wasm": "wasm-pack build rust --target web",
+    "build:wasm": "wasm-pack build rust --target bundler",
     "build:frontend": "vite build",
     "build": "run-s build:wasm build:frontend",
     "test:wasm": "wasm-pack test --chrome --firefox --headless rust",
@@ -16,7 +16,7 @@
     "precommit": "lint-staged"
   },
   "dependencies": {
-    "@monaco-editor/react": "^4.4.5",
+    "@monaco-editor/react": "4.4.5",
     "@testing-library/jest-dom": "5.15.0",
     "@testing-library/react": "12.1.2",
     "@testing-library/user-event": "13.5.0",
@@ -26,13 +26,13 @@
     "classnames": "2.3.1",
     "copy-to-clipboard": "3.3.1",
     "highlight.js": "11.6.0",
-    "monaco-themes": "^0.4.2",
+    "monaco-themes": "0.4.2",
     "motoko": "2.0.3",
     "react": "17.0.2",
     "react-device-detect": "2.2.2",
     "react-dom": "17.0.2",
     "react-icons": "4.4.0",
-    "react-json-view": "^1.21.3",
+    "react-json-view": "1.21.3",
     "react-tooltip": "4.2.21"
   },
   "devDependencies": {
@@ -52,8 +52,8 @@
     "tailwindcss": "3.1.6",
     "vite": "3.0.4",
     "vite-imagetools": "4.0.4",
-    "vite-plugin-top-level-await": "^1.1.1",
-    "vite-plugin-wasm-pack": "^0.1.12",
+    "vite-plugin-top-level-await": "1.1.1",
+    "vite-plugin-wasm": "2.1.0",
     "vitest": "0.20.2",
     "wasm-pack": "0.10.3",
     "web-vitals": "2.1.4"

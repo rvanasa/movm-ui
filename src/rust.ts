@@ -1,5 +1,3 @@
-import init, * as rust from '../rust/pkg/rust';
-
-await init();
+import * as rust from '../rust/pkg/rust';
 
 export default rust;
