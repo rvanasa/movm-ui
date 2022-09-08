@@ -14,7 +14,7 @@ a + 1;
 `.trim();
 
 window.RUST = rust; ///
-console.log(rust);
+// console.log(rust);
 
 export default function Workspace() {
   const [code, setCode] = useState(defaultCode);
@@ -27,12 +27,9 @@ export default function Workspace() {
   const monaco = useMonaco();
   const selectedCore = history[Math.min(index, history.length - 1)];
 
-  // console.log(history, end); ///
-
   const span = history[history.length - 1]?.cont_source?.span;
   if (span) {
-    console.log(span.start, span.end);
-    // ref._input.setSelectionRange(span.start, span.end);
+    console.log('Span:', span.start, span.end);
 
     for (const model of monaco.editor.getModels()) {
       const start = model.getPositionAt(span.start);
@@ -104,6 +101,7 @@ export default function Workspace() {
     setInterruption(rust.forward());
     notify();
   };
+
   const backward = () => {
     if (changed) {
       evaluate();
