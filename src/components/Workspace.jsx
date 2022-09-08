@@ -99,17 +99,18 @@ export default function Workspace() {
 
   const forward = () => {
     if (changed) {
-      return evaluate();
+      evaluate();
     }
     setInterruption(rust.forward());
     notify();
   };
   const backward = () => {
     if (changed) {
-      return evaluate();
+      evaluate();
+    } else {
+      setInterruption(interruption ? null : rust.backward());
+      notify();
     }
-    setInterruption(interruption ? null : rust.backward());
-    notify();
   };
 
   return (
