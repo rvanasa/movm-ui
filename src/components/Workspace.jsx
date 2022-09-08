@@ -21,10 +21,10 @@ export default function Workspace() {
   const [changed, setChanged] = useState(false);
   const [error, setError] = useState(null);
   const [history, setHistory] = useState([]);
-  const [, /* signal */ setSignal] = useState(null);
+  const [interruption, setInterruption] = useState(null);
   const [index, setIndex] = useState(0);
-  const monaco = useMonaco();
 
+  const monaco = useMonaco();
   const selectedCore = history[Math.min(index, history.length - 1)];
 
   // console.log(history, end); ///
@@ -66,8 +66,7 @@ export default function Workspace() {
   const evaluate = useCallback(() => {
     try {
       const input = preprocessMotoko(code);
-      const signal = rust.set_input(input.code);
-      setSignal(signal);
+      rust.set_input(input.code);
       setChanged(false);
       notify();
       setError(null);
@@ -99,11 +98,17 @@ export default function Workspace() {
   };
 
   const forward = () => {
-    rust.forward();
+    if (changed) {
+      return evaluate();
+    }
+    setInterruption(rust.forward());
     notify();
   };
   const backward = () => {
-    rust.backward();
+    if (changed) {
+      return evaluate();
+    }
+    setInterruption(interruption ? null : rust.backward());
     notify();
   };
 
@@ -152,11 +157,18 @@ export default function Workspace() {
                     {JSON.stringify(end)}
                   </pre>
                 )} */}
-                {!!selectedCore?.cont && (
-                  <pre className={'text-green-800'}>
+                {interruption ? (
+                  <pre className={'text-orange-600'}>
                     <span className="text-blue-800">[{index}]</span>{' '}
-                    {JSON.stringify(selectedCore.cont)}
+                    {JSON.stringify(interruption)}
                   </pre>
+                ) : (
+                  !!selectedCore?.cont && (
+                    <pre className={'text-green-800'}>
+                      <span className="text-blue-800">[{index}]</span>{' '}
+                      {JSON.stringify(selectedCore.cont)}
+                    </pre>
+                  )
                 )}
               </div>
               <Button onClick={() => backward()}>

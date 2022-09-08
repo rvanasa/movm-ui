@@ -44,7 +44,7 @@ pub fn set_input(input: &str) {
 }
 
 #[wasm_bindgen]
-pub fn forward() -> Option<String> {
+pub fn forward() -> JsValue {
     let history = &mut *HISTORY.lock().unwrap();
 
     if !history.is_empty() {
@@ -56,12 +56,12 @@ pub fn forward() -> Option<String> {
         match core.step(&limits) {
             Ok(_) => {
                 history.push(core);
-                None
+                JsValue::null()
             }
-            Err(end) => Some(serde_json::to_string(&end).unwrap()),
+            Err(end) => JsValue::from_serde(&end).unwrap(),
         }
     } else {
-        None
+        JsValue::null()
     }
 }
 
