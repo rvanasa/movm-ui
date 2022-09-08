@@ -64,6 +64,7 @@ export const EDITOR_FONT_SIZE = isMobile() ? 14 : 18;
 
 export default function CodeEditor({
   innerRef,
+  onMount,
   value,
   onChange,
   readOnly,
@@ -75,8 +76,9 @@ export default function CodeEditor({
       theme="motoko-theme"
       defaultLanguage="motoko"
       beforeMount={configureMonaco}
+      onMount={onMount}
       value={value}
-      onChange={(newValue) => onChange?.(newValue)}
+      onChange={onChange}
       options={{
         tabSize: 2,
         // minimap: { enabled: false },
