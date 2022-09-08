@@ -185,6 +185,7 @@ export default function Workspace() {
                   // name="core"
                   name={null}
                   style={{ padding: '1rem' }}
+                  collapsed={2}
                 ></JsonView>
               )}
             </div>
