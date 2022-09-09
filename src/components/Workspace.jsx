@@ -124,7 +124,7 @@ export default function Workspace() {
   return (
     <>
       <div className="min-h-screen flex flex-col pt-8 items-center gap-4">
-        <div className="p-4 w-full max-w-[800px] flex flex-col justify-center items-center">
+        <div className="p-4 w-full flex flex-col justify-center items-center">
           <h1
             className={classNames(
               'text-white p-3 pt-2 pb-4 opacity-70 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
@@ -139,57 +139,61 @@ export default function Workspace() {
             vm
           </h1>
           <hr className="w-full mt-5 mb-3" />
-          <div className="w-full py-4">
-            <div
-              className="mx-auto h-[300px] rounded overflow-hidden"
-              style={{
-                boxShadow: '0 0 20px #CCC',
-              }}
-            >
-              <CodeEditor
-                value={code}
-                onChange={onEditorChange}
-                onMount={onEditorMount}
-              />
+          <div className="block md:flex w-full">
+            <div className="w-[800px]">
+              <div className="w-full py-4">
+                <div
+                  className="mx-auto h-[300px] rounded overflow-hidden"
+                  style={{
+                    boxShadow: '0 0 20px #CCC',
+                  }}
+                >
+                  <CodeEditor
+                    value={code}
+                    onChange={onEditorChange}
+                    onMount={onEditorMount}
+                  />
+                </div>
+              </div>
+              <div className="w-full">
+                <div className="flex gap-2 items-start">
+                  <div className="text-lg opacity-70 overflow-x-auto flex-1">
+                    {interruption ? (
+                      <pre className={'text-orange-600'}>
+                        <span className="text-blue-800">[{index + 1}]</span>{' '}
+                        <Interruption node={interruption} />
+                      </pre>
+                    ) : (
+                      !!selectedCore?.cont && (
+                        <pre className={'text-green-800'}>
+                          <span className="text-blue-800">[{index}]</span>{' '}
+                          <Cont node={selectedCore.cont} />
+                        </pre>
+                      )
+                    )}
+                  </div>
+                  <Button onClick={() => backward()}>
+                    <FaCaretLeft className="mr-[2px]" />
+                  </Button>
+                  <Button onClick={() => forward()}>
+                    <FaCaretRight className="ml-[2px]" />
+                  </Button>
+                </div>
+              </div>
+              <hr className="w-full m-4" />
             </div>
-          </div>
-          <div className="w-full">
-            <div className="flex gap-2 items-center">
-              <div className="text-lg opacity-70 overflow-x-auto flex-1">
-                {interruption ? (
-                  <pre className={'text-orange-600'}>
-                    <span className="text-blue-800">[{index + 1}]</span>{' '}
-                    <Interruption node={interruption}/>
-                  </pre>
-                ) : (
-                  !!selectedCore?.cont && (
-                    <pre className={'text-green-800'}>
-                      <span className="text-blue-800">[{index}]</span>{' '}
-                      <Cont node={selectedCore.cont}/>
-                    </pre>
-                  )
+            <div className="w-full flex">
+              <div className="w-full text-lg">
+                {!!selectedCore && (
+                  <JsonView
+                    src={selectedCore}
+                    // name="core"
+                    name={null}
+                    style={{ padding: '1rem' }}
+                    collapsed={2}
+                  ></JsonView>
                 )}
               </div>
-              <Button onClick={() => backward()}>
-                <FaCaretLeft className="mr-[2px]" />
-              </Button>
-              <Button onClick={() => forward()}>
-                <FaCaretRight className="ml-[2px]" />
-              </Button>
-            </div>
-          </div>
-          <hr className="w-full m-4" />
-          <div className="w-full flex">
-            <div className="w-full text-lg">
-              {!!selectedCore && (
-                <JsonView
-                  src={selectedCore}
-                  // name="core"
-                  name={null}
-                  style={{ padding: '1rem' }}
-                  collapsed={2}
-                ></JsonView>
-              )}
             </div>
           </div>
         </div>
