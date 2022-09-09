@@ -7,6 +7,8 @@ import Button from './Button';
 import JsonView from 'react-json-view';
 import { useMonaco } from '@monaco-editor/react';
 import classNames from 'classnames';
+import Cont from './nodes/Cont';
+import Interruption from './nodes/Interruption';
 
 const defaultCode = `
 let a = 1;
@@ -91,8 +93,7 @@ export default function Workspace() {
       if ((e.ctrlKey || e.metaKey) && e.browserEvent.key === 'Enter') {
         e.stopPropagation();
         e.preventDefault();
-
-        editorRef.current?.__evaluate();
+        newEditor.__evaluate?.();
       }
     });
   };
@@ -157,14 +158,14 @@ export default function Workspace() {
               <div className="text-lg opacity-70 overflow-x-auto flex-1">
                 {interruption ? (
                   <pre className={'text-orange-600'}>
-                    <span className="text-blue-800">[{index}]</span>{' '}
-                    {JSON.stringify(interruption)}
+                    <span className="text-blue-800">[{index + 1}]</span>{' '}
+                    <Interruption node={interruption}/>
                   </pre>
                 ) : (
                   !!selectedCore?.cont && (
                     <pre className={'text-green-800'}>
                       <span className="text-blue-800">[{index}]</span>{' '}
-                      {JSON.stringify(selectedCore.cont)}
+                      <Cont node={selectedCore.cont}/>
                     </pre>
                   )
                 )}
