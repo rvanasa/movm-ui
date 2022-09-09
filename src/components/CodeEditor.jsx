@@ -87,6 +87,9 @@ export default function CodeEditor({
         scrollBeyondLastLine: false,
         fontSize: EDITOR_FONT_SIZE,
         readOnly: readOnly || isMobile(),
+        scrollbar: {
+          alwaysConsumeMouseWheel: false,
+        },
         ...options,
       }}
       {...others}
