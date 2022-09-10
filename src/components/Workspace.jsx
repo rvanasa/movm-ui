@@ -115,7 +115,8 @@ export default function Workspace() {
       }
     }
 
-    for (const model of monaco.editor.getModels()) {
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
       monaco.editor.setModelMarkers(
         model,
         'mo-vm',
@@ -176,9 +177,7 @@ export default function Workspace() {
 
   const editorRef = useRef();
   const updateEditor = (editor) => {
-    if (editorRef.current) {
-      editorRef.current.__handleKeyDown = (event) => onKeyDown(event, true);
-    }
+    editor.__handleKeyDown = (event) => onKeyDown(event, true);
   };
   if (editorRef.current) {
     updateEditor(editorRef.current);
