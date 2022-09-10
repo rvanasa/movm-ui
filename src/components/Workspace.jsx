@@ -23,7 +23,7 @@ window.RUST = rust; ///
 const continuationColors = {
   Decs: '#DAB6C4',
   Exp_: '#B4DC7F',
-  Value: '#FEFFA5',
+  Value: '#5DB7DE',
   LetVarRet: '#7B886F',
 };
 const interruptionColors = {
@@ -172,6 +172,11 @@ export default function Workspace() {
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
 
+  const changedClassNames = classNames(
+    changed && 'opacity-75',
+    'transition-opacity duration-[.2s]',
+  );
+
   return (
     <>
       <div className="min-h-screen flex flex-col items-center gap-4">
@@ -211,7 +216,7 @@ export default function Workspace() {
                   />
                 </div>
               </div>
-              <div>
+              <div className={changedClassNames}>
                 <div className="text-lg flex items-center">
                   <div className="w-[50px]">
                     {!!selectedState && (
@@ -283,7 +288,7 @@ export default function Workspace() {
               {/* <hr className="w-full m-4" /> */}
             </div>
             <div className="w-full flex">
-              <div className="w-full text-lg">
+              <div className={classNames('w-full text-lg', changedClassNames)}>
                 {!!selectedState && (
                   <JsonView
                     src={selectedState}
@@ -293,7 +298,7 @@ export default function Workspace() {
                     collapsed={2}
                     displayDataTypes={false}
                     theme="shapeshifter"
-                  ></JsonView>
+                  />
                 )}
               </div>
             </div>
