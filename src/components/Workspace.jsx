@@ -296,19 +296,17 @@ export default function Workspace() {
               primary="first"
               defaultSize="350px"
             >
-              <div className="w-full">
-                <div
-                  className="mx-auto h-full rounded overflow-hidden" // h-[300px]
-                  style={{
-                    boxShadow: '0 0 20px #222',
-                  }}
-                >
-                  <CodeEditor
-                    value={code}
-                    onChange={onEditorChange}
-                    onMount={onEditorMount}
-                  />
-                </div>
+              <div
+                className="w-full h-full"
+                style={{
+                  boxShadow: '0 0 20px #222',
+                }}
+              >
+                <CodeEditor
+                  value={code}
+                  onChange={onEditorChange}
+                  onMount={onEditorMount}
+                />
               </div>
               <div className={pendingClassNames}>
                 <div className="text-lg flex items-center">
@@ -391,7 +389,6 @@ export default function Workspace() {
                   )}
                 </div>
               </div>
-              {/* <hr className="w-full m-4" /> */}
             </ResponsiveSplitPane>
             <div>
               <div className={classNames('w-full text-lg', pendingClassNames)}>
