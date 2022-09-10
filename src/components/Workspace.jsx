@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
@@ -147,7 +141,7 @@ export default function Workspace() {
     return [start, end];
   }, []);
 
-  useEffect(() => {
+  useTimeout(() => {
     if (!monaco) {
       return;
     }
@@ -181,7 +175,7 @@ export default function Workspace() {
         }),
       );
     }
-  }, [changed, getCoreSpan, monaco, mostRecentCore]);
+  }, 50);
 
   const notify = useCallback(() => {
     try {
