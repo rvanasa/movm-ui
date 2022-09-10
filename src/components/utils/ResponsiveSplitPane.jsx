@@ -1,3 +1,4 @@
+import React from 'react';
 import SplitPane from 'react-split-pane';
 import isMobile from '../../utils/isMobile';
 
