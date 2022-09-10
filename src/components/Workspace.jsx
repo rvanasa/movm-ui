@@ -28,9 +28,6 @@ let a = 1;
 a + 1;
 `.trim() + '\n';
 
-window.RUST = rust; ///
-// console.log(rust);
-
 const continuationColors = {
   Decs: '#DAB6C4',
   Exp_: '#B4DC7F',
