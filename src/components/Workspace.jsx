@@ -248,8 +248,8 @@ export default function Workspace() {
                             selectedState === state && 'scale-110',
                           )}
                           style={{
-                            boxShadow: `0 0 ${
-                              clampedIndex === i ? 10 : 5
+                            boxShadow: `0 0 5px ${
+                              clampedIndex === i ? 1 : 0
                             }px #FFF`,
                             backgroundColor:
                               interruptionColors[
