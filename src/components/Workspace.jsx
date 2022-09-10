@@ -448,7 +448,7 @@ export default function Workspace() {
                           <div
                             className={classNames(
                               'inline-block w-[10px] aspect-square rounded-full',
-                              // 'animate-[scale-in_.15s_ease-out]',
+                              'transition-transform duration-[.1s]',
                               selectedState === state && 'scale-110',
                             )}
                             style={{
