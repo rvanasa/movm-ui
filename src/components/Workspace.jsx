@@ -62,7 +62,7 @@ export default function Workspace() {
 
   const changed = code.trimEnd() !== lastCode.trimEnd();
 
-  const completed = history[history.length - 1].state_type === 'Interruption';
+  const completed = history[history.length - 1]?.state_type === 'Interruption';
 
   const monaco = useMonaco();
   const selectedState = history[index];
