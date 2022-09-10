@@ -13,13 +13,13 @@ $resizer-width: 5px;
   background-clip: padding-box;
 
   &.horizontal {
-    height: $resizer-width * 2 + 1;
+    width: 100%;
+    // height: $resizer-width * 2 + 1;
+    height: 0;
     margin: -$resizer-width 0;
     border-top: $resizer-width solid transparent;
     border-bottom: $resizer-width solid transparent;
     cursor: row-resize;
-    width: 100%;
-    // height:500px; ///////
 
     &:hover {
       border-top: $resizer-width solid rgba(255, 255, 255, 0.3);

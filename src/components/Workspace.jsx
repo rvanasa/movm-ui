@@ -309,7 +309,7 @@ export default function Workspace() {
                 />
               </div>
               <div className={pendingClassNames}>
-                <div className="text-lg flex items-center">
+                <div className="text-lg flex items-center select-none">
                   <div className="w-[60px]">
                     {!!selectedState && (
                       <pre
@@ -333,7 +333,7 @@ export default function Workspace() {
                         <div
                           className={classNames(
                             history.length > 20 ? 'p-1' : 'p-2',
-                            'cursor-pointer select-none hover:scale-[1.2]',
+                            'cursor-pointer hover:scale-[1.2]',
                           )}
                           onClick={() => setIndex(i)}
                           onMouseOver={() => setHoverIndex(i)}
