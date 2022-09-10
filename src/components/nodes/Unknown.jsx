@@ -1,5 +1,5 @@
 import React from 'react';
 
 export default function Unknown({ node }) {
-  return <>{JSON.stringify(node)}</>;
+  return <pre>{JSON.stringify(node)}</pre>;
 }

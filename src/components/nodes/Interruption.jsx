@@ -1,9 +1,10 @@
 import React from 'react';
-import Unknown from './Unknown';
-import Node from './Node';
+import Cont from './Cont';
 
 export default function Interruption({ node }) {
   const { interruption_type: type, value } = node;
+
+  return <Cont node={{ cont_type: type, value }}></Cont>;
 
   // if (type === 'Done') {
   //   const decs = value;
@@ -16,5 +17,5 @@ export default function Interruption({ node }) {
   //   );
   // }
 
-  return <Unknown node={node}></Unknown>;
+  // return <Unknown node={node}></Unknown>;
 }

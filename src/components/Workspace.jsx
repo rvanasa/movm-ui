@@ -9,6 +9,8 @@ import { useMonaco } from '@monaco-editor/react';
 import classNames from 'classnames';
 import Cont from './nodes/Cont';
 import Interruption from './nodes/Interruption';
+import useListener from '../hooks/utils/useListener';
+import colors from 'tailwindcss/colors';
 
 const defaultCode = `
 let a = 1;
@@ -18,16 +20,42 @@ a + 1;
 window.RUST = rust; ///
 // console.log(rust);
 
+const continuationColors = {
+  Decs: '#DAB6C4',
+  Exp_: '#B4DC7F',
+  Value: '#FEFFA5',
+  LetVarRet: '#7B886F',
+};
+const interruptionColors = {
+  Done: colors.green[500],
+};
+const defaultStateColor = '#FFA0AC';
+
 export default function Workspace() {
   const [code, setCode] = useState(defaultCode);
   const [changed, setChanged] = useState(false);
   const [error, setError] = useState(null);
+  // const history = rust.history();
   const [history, setHistory] = useState([]);
-  const [interruption, setInterruption] = useState(null);
-  const [index, setIndex] = useState(0);
+  const [index_, setIndex_] = useState(0);
+  const [hoverIndex, setHoverIndex] = useState(null);
+
+  const setIndex = (index) => {
+    setHoverIndex(null);
+    setIndex_(index);
+  };
+
+  const clampedIndex = Math.max(0, Math.min(index_, history.length - 1));
+  const index = hoverIndex ?? clampedIndex;
 
   const monaco = useMonaco();
-  const selectedCore = history[Math.min(index, history.length - 1)];
+  const selectedState = history[index];
+
+  const selectedCore =
+    selectedState?.state_type === 'Core' ? selectedState.value : null;
+
+  const selectedInterruption =
+    selectedState?.state_type === 'Interruption' ? selectedState.value : null;
 
   const span = history[history.length - 1]?.cont_source?.span;
   if (span) {
@@ -53,8 +81,8 @@ export default function Workspace() {
   const notify = useCallback(() => {
     try {
       const history = rust.history();
-      setIndex(history.length - 1);
       setHistory(history);
+      // setIndex(history.length - 1);
       setError(null);
     } catch (err) {
       setError(err);
@@ -65,9 +93,9 @@ export default function Workspace() {
   const evaluate = useCallback(() => {
     try {
       const input = preprocessMotoko(code);
-      setHistory([]);
+      // setHistory([]);
       setChanged(false);
-      setInterruption(null);
+      // setInterruption(null);
       setError(null);
       rust.set_input(input.code);
       notify();
@@ -84,18 +112,11 @@ export default function Workspace() {
 
   const editorRef = useRef();
   if (editorRef.current) {
-    editorRef.current.__evaluate = () => forward();
+    editorRef.current.__handleKeyDown = (event) => onKeyDown(event, true);
   }
   const onEditorMount = (newEditor) => {
     editorRef.current = newEditor;
-    newEditor.onKeyDown((e) => {
-      // Run code on Ctrl/Cmd + Enter
-      if ((e.ctrlKey || e.metaKey) && e.browserEvent.key === 'Enter') {
-        e.stopPropagation();
-        e.preventDefault();
-        newEditor.__evaluate?.();
-      }
-    });
+    newEditor.onKeyDown((e) => newEditor.__handleKeyDown?.(e.browserEvent));
   };
 
   const onEditorChange = (newCode) => {
@@ -103,49 +124,84 @@ export default function Workspace() {
     setChanged(true);
   };
 
-  const forward = () => {
+  const forward = useCallback(() => {
     if (changed) {
       evaluate();
     } else {
-      setInterruption(rust.forward());
+      setIndex(history.length - 1 + (rust.forward() ? 1 : 0));
       notify();
     }
-  };
+  }, [changed, evaluate, history.length, notify]);
 
-  const backward = () => {
+  const backward = useCallback(() => {
     if (changed) {
       evaluate();
     } else {
-      setInterruption(interruption ? null : rust.backward());
+      setIndex(history.length - 1 - (rust.backward() ? 1 : 0));
       notify();
     }
-  };
+  }, [changed, evaluate, history.length, notify]);
+
+  const onKeyDown = useCallback(
+    (e, inEditor) => {
+      const modifier = e.ctrlKey || e.metaKey;
+      if (inEditor) {
+        if (modifier && e.key === 'Enter') {
+          e.stopPropagation();
+          e.preventDefault();
+          forward();
+        }
+      } else {
+        if (e.key === 'ArrowLeft') {
+          if (modifier) {
+            backward();
+          } else {
+            setIndex(index - 1);
+          }
+        }
+        if (e.key === 'ArrowRight') {
+          if (modifier) {
+            forward();
+          } else {
+            setIndex(index + 1);
+          }
+        }
+      }
+    },
+    [forward, backward, index],
+  );
+  useListener(document, 'keydown', (e) => onKeyDown(e, false));
 
   return (
     <>
-      <div className="min-h-screen flex flex-col pt-8 items-center gap-4">
-        <div className="p-4 w-full flex flex-col justify-center items-center">
-          <h1
-            className={classNames(
-              'text-white p-3 pt-2 pb-4 opacity-70 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
-              'transition-all duration-200',
-              error ? 'bg-red-800' : changed ? 'bg-green-700' : 'bg-black',
-              changed && 'hover:scale-105 active:scale-110 active:duration-100',
-            )}
-            onClick={() => evaluate()}
-          >
-            mo
-            <br />
-            vm
-          </h1>
+      <div className="min-h-screen flex flex-col items-center gap-4">
+        <div className="p-5 w-full flex flex-col">
+          <div>
+            <h1 className="hidden">Motoko VM</h1>
+            <div
+              className={classNames(
+                'inline-block text-white p-3 pt-2 pb-4 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
+                'transition-all duration-200',
+                error ? 'bg-red-800' : changed ? 'bg-green-700' : 'bg-[#444]',
+                changed &&
+                  'hover:scale-105 active:scale-110 active:duration-100',
+              )}
+              style={{ textShadow: '0 0 10px rgba(255,255,255,.5)' }}
+              onClick={() => evaluate()}
+            >
+              Mo
+              <br />
+              VM
+            </div>
+          </div>
           <hr className="w-full mt-5 mb-3" />
-          <div className="block md:flex w-full">
-            <div className="w-[800px]">
+          <div className="w-full md:grid grid-cols-2 gap-4">
+            <div>
               <div className="w-full py-4">
                 <div
                   className="mx-auto h-[300px] rounded overflow-hidden"
                   style={{
-                    boxShadow: '0 0 20px #CCC',
+                    boxShadow: '0 0 20px #222',
                   }}
                 >
                   <CodeEditor
@@ -155,42 +211,88 @@ export default function Workspace() {
                   />
                 </div>
               </div>
-              <div className="w-full">
-                <div className="flex gap-2 items-start">
-                  <div className="text-lg opacity-70 overflow-x-auto flex-1">
-                    {interruption ? (
-                      <pre className={'text-orange-600'}>
-                        <span className="text-blue-800">[{index + 1}]</span>{' '}
-                        <Interruption node={interruption} />
+              <div>
+                <div className="text-lg flex items-center">
+                  <div className="w-[50px]">
+                    {!!selectedState && (
+                      <pre
+                        className={classNames(
+                          selectedInterruption
+                            ? 'text-orange-300'
+                            : 'text-blue-400',
+                        )}
+                      >
+                        [{index}]
                       </pre>
-                    ) : (
-                      !!selectedCore?.cont && (
-                        <pre className={'text-green-800'}>
-                          <span className="text-blue-800">[{index}]</span>{' '}
-                          <Cont node={selectedCore.cont} />
-                        </pre>
-                      )
                     )}
                   </div>
-                  <Button onClick={() => backward()}>
-                    <FaCaretLeft className="mr-[2px]" />
-                  </Button>
-                  <Button onClick={() => forward()}>
-                    <FaCaretRight className="ml-[2px]" />
-                  </Button>
+                  <div className="flex-grow flex overflow-x-auto items-center">
+                    {history.map((state, i) => (
+                      <div
+                        key={i}
+                        className="p-1 cursor-pointer select-none hover:scale-[1.2]"
+                        onClick={() => setIndex(i)}
+                        onMouseOver={() => setHoverIndex(i)}
+                        onMouseOut={() =>
+                          hoverIndex === i && setHoverIndex(null)
+                        }
+                      >
+                        <div
+                          className={classNames(
+                            'inline-block w-4 aspect-square rounded-sm',
+                            selectedState === state && 'scale-110',
+                          )}
+                          style={{
+                            boxShadow: `0 0 ${
+                              clampedIndex === i ? 10 : 5
+                            }px #FFF`,
+                            backgroundColor:
+                              interruptionColors[
+                                state.value.interruption_type
+                              ] ||
+                              continuationColors[state.value.cont?.cont_type] ||
+                              defaultStateColor,
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <Button onClick={() => backward()}>
+                      <FaCaretLeft className="mr-[2px]" />
+                    </Button>
+                    <Button onClick={() => forward()}>
+                      <FaCaretRight className="ml-[2px]" />
+                    </Button>
+                  </div>
+                </div>
+                <div className="text-lg">
+                  {selectedInterruption ? (
+                    <div className={'text-orange-300'}>
+                      <Interruption node={selectedInterruption} />
+                    </div>
+                  ) : (
+                    !!selectedCore?.cont && (
+                      <div className={'text-green-400'}>
+                        <Cont node={selectedCore.cont} />
+                      </div>
+                    )
+                  )}
                 </div>
               </div>
-              <hr className="w-full m-4" />
+              {/* <hr className="w-full m-4" /> */}
             </div>
             <div className="w-full flex">
               <div className="w-full text-lg">
-                {!!selectedCore && (
+                {!!selectedState && (
                   <JsonView
-                    src={selectedCore}
+                    src={selectedState}
                     // name="core"
                     name={null}
                     style={{ padding: '1rem' }}
                     collapsed={2}
+                    displayDataTypes={false}
+                    theme="shapeshifter"
                   ></JsonView>
                 )}
               </div>

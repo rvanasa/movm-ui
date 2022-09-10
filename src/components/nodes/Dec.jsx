@@ -1,13 +1,18 @@
 import React from 'react';
 import Unknown from './Unknown';
-import Node from './Node';
+import Exp from './Exp';
 
 export default function Dec({ node }) {
   const { type, value } = node;
 
-  // if (type === '') {
-  //   const []=value;
-  //   return <Node></Node>;
+  if (type === 'Exp') {
+    const exp = value;
+    return <Exp node={exp} />;
+  }
+
+  // if (type === 'Let') {
+  //   const [pat, exp] = value;
+  //   return <Node name={<>let</>} />;
   // }
 
   return <Unknown node={node}></Unknown>;
