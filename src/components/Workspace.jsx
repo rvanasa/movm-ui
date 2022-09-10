@@ -20,6 +20,7 @@ import colors from 'tailwindcss/colors';
 import useTimeout from '../hooks/utils/useTimeout';
 import { TransitionGroup } from 'react-transition-group';
 import CSSTransitionWrapper from './utils/CSSTransitionWrapper';
+import ResponsiveSplitPane from './utils/ResponsiveSplitPane';
 
 const defaultCode =
   `
@@ -285,11 +286,19 @@ export default function Workspace() {
             )}
           </div>
           <hr className="w-full mt-5 mb-3" />
-          <div className="w-full md:grid grid-cols-2 gap-4">
-            <div>
-              <div className="w-full py-4">
+          <ResponsiveSplitPane
+            split="vertical"
+            primary="first"
+            defaultSize="60%"
+          >
+            <ResponsiveSplitPane
+              split="horizontal"
+              primary="first"
+              defaultSize="350px"
+            >
+              <div className="w-full">
                 <div
-                  className="mx-auto h-[300px] rounded overflow-hidden"
+                  className="mx-auto h-full rounded overflow-hidden" // h-[300px]
                   style={{
                     boxShadow: '0 0 20px #222',
                   }}
@@ -383,8 +392,8 @@ export default function Workspace() {
                 </div>
               </div>
               {/* <hr className="w-full m-4" /> */}
-            </div>
-            <div className="w-full flex">
+            </ResponsiveSplitPane>
+            <div>
               <div className={classNames('w-full text-lg', pendingClassNames)}>
                 {!!mostRecentCore && (
                   <JsonView
@@ -399,7 +408,7 @@ export default function Workspace() {
                 )}
               </div>
             </div>
-          </div>
+          </ResponsiveSplitPane>
         </div>
       </div>
     </>
