@@ -67,11 +67,13 @@ export default function Workspace() {
     selectedState?.state_type === 'Core' ? selectedState.value : null;
 
   let mostRecentCore = null;
-  for (let i = index; i > 0; i--) {
-    const state = history[i];
-    if (state.state_type === 'Core') {
-      mostRecentCore = state.value;
-      break;
+  if (history.length) {
+    for (let i = index; i >= 0; i--) {
+      const state = history[i];
+      if (state.state_type === 'Core') {
+        mostRecentCore = state.value;
+        break;
+      }
     }
   }
 
