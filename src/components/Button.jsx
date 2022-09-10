@@ -8,7 +8,7 @@ export default function Button({ tooltip, className, children, ...others }) {
   return (
     <div
       className={classNames(
-        'inline-flex justify-center items-center p-1 border-[3px] border-[#333] hover:scale-105 text-2xl rounded cursor-pointer select-none',
+        'inline-flex justify-center items-center p-1 border-[3px] border-[#555] hover:scale-105 text-2xl rounded cursor-pointer select-none',
         className,
       )}
       data-tip={tooltip || undefined}

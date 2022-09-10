@@ -1,4 +1,4 @@
-import motokoTheme from 'monaco-themes/themes/GitHub.json';
+import motokoTheme from 'monaco-themes/themes/Blackboard.json';
 import { configure } from 'motoko/contrib/monaco';
 
 export const configureMonaco = (monaco) => {

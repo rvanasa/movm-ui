@@ -1,10 +1,14 @@
 import { useEffect } from 'react';
 
-export default function useTimeout(
-  ...args: [callback: (args: void) => void, ms?: number]
+export default function useTimeout<T extends any[]>(
+  callback?: ((args: void) => void) | undefined | null | false,
+  ms?: number,
+  ...args: T
 ) {
   useEffect(() => {
-    const id = setTimeout(...args);
-    return () => clearTimeout(id);
+    if (callback) {
+      const id = setTimeout(callback, ms, ...args);
+      return () => clearTimeout(id);
+    }
   });
 }
