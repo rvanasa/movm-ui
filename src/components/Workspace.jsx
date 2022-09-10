@@ -276,7 +276,7 @@ export default function Workspace() {
               </div>
               <div className={pendingClassNames}>
                 <div className="text-lg flex items-center">
-                  <div className="w-[50px]">
+                  <div className="w-[60px]">
                     {!!selectedState && (
                       <pre
                         className={classNames(
@@ -289,7 +289,7 @@ export default function Workspace() {
                       </pre>
                     )}
                   </div>
-                  <div className="w-full flex overflow-x-auto no-scrollbar items-center">
+                  <div className="w-full flex overflow-x-auto items-center">
                     {history.map((state, i) => (
                       <div
                         key={i}
@@ -303,22 +303,6 @@ export default function Workspace() {
                           hoverIndex === i && setHoverIndex(null)
                         }
                       >
-                        {/* <div
-                          className={classNames(
-                            'inline-block w-4 aspect-square rounded-sm',
-                            'animate-[scale-in_.1s_ease-out]',
-                            selectedState === state && 'scale-110',
-                          )}
-                          style={{
-                            boxShadow: clampedIndex===i&&`0 0 5px 2px #FFF`,
-                            backgroundColor:
-                              interruptionColors[
-                                state.value.interruption_type
-                              ] ||
-                              continuationColors[state.value.cont?.cont_type] ||
-                              defaultStateColor,
-                          }}
-                        /> */}
                         <div
                           className={classNames(
                             'inline-block w-[10px] aspect-square rounded-full',
