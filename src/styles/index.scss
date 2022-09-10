@@ -40,3 +40,13 @@ hr {
     display: none;
   }
 }
+
+.state-animation {
+  &-enter {
+    animation: scale-in 150ms ease-out;
+  }
+  &-exit-active {
+    transform: scale(0);
+    animation: scale-in 100ms ease-out reverse;
+  }
+}

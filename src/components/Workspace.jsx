@@ -12,6 +12,8 @@ import Interruption from './nodes/Interruption';
 import useListener from '../hooks/utils/useListener';
 import colors from 'tailwindcss/colors';
 import useTimeout from '../hooks/utils/useTimeout';
+import { TransitionGroup } from 'react-transition-group';
+import CSSTransitionWrapper from './utils/CSSTransitionWrapper';
 
 const defaultCode =
   `
@@ -190,13 +192,11 @@ export default function Workspace() {
   const onKeyDown = useCallback(
     (e, inEditor) => {
       const modifier = e.ctrlKey || e.metaKey;
-      if (inEditor) {
-        if (modifier && e.key === 'Enter') {
-          e.stopPropagation();
-          e.preventDefault();
-          evaluate(true);
-        }
-      } else {
+      if (modifier && e.key === 'Enter') {
+        e.stopPropagation();
+        e.preventDefault();
+        evaluate(true);
+      } else if (!inEditor) {
         if (e.key === 'ArrowLeft') {
           if (modifier) {
             backward();
@@ -289,42 +289,49 @@ export default function Workspace() {
                       </pre>
                     )}
                   </div>
-                  <div className="w-full flex overflow-x-auto items-center">
+                  <TransitionGroup className="w-full flex overflow-x-scroll items-center">
                     {history.map((state, i) => (
-                      <div
+                      <CSSTransitionWrapper
                         key={i}
-                        className={classNames(
-                          history.length > 20 ? 'p-1' : 'p-2',
-                          'cursor-pointer select-none hover:scale-[1.2]',
-                        )}
-                        onClick={() => setIndex(i)}
-                        onMouseOver={() => setHoverIndex(i)}
-                        onMouseOut={() =>
-                          hoverIndex === i && setHoverIndex(null)
-                        }
+                        timeout={150}
+                        classNames="state-animation"
                       >
                         <div
                           className={classNames(
-                            'inline-block w-[10px] aspect-square rounded-full',
-                            'animate-[scale-in_.15s_ease-out]',
-                            selectedState === state && 'scale-110',
+                            history.length > 20 ? 'p-1' : 'p-2',
+                            'cursor-pointer select-none hover:scale-[1.2]',
                           )}
-                          style={{
-                            boxShadow: `0 0 10px ${
-                              clampedIndex === i ? 4 : 2
-                            }px ${
-                              interruptionColors[
-                                state.value.interruption_type
-                              ] ||
-                              continuationColors[state.value.cont?.cont_type] ||
-                              defaultStateColor
-                            }`,
-                            backgroundColor: 'white',
-                          }}
-                        />
-                      </div>
+                          onClick={() => setIndex(i)}
+                          onMouseOver={() => setHoverIndex(i)}
+                          onMouseOut={() =>
+                            hoverIndex === i && setHoverIndex(null)
+                          }
+                        >
+                          <div
+                            className={classNames(
+                              'inline-block w-[10px] aspect-square rounded-full',
+                              // 'animate-[scale-in_.15s_ease-out]',
+                              selectedState === state && 'scale-110',
+                            )}
+                            style={{
+                              boxShadow: `0 0 10px ${
+                                clampedIndex === i ? 4 : 2
+                              }px ${
+                                interruptionColors[
+                                  state.value.interruption_type
+                                ] ||
+                                continuationColors[
+                                  state.value.cont?.cont_type
+                                ] ||
+                                defaultStateColor
+                              }`,
+                              backgroundColor: 'white',
+                            }}
+                          />
+                        </div>
+                      </CSSTransitionWrapper>
                     ))}
-                  </div>
+                  </TransitionGroup>
                   <div className="flex">
                     <Button onClick={() => backward()}>
                       <FaCaretLeft className="mr-[2px]" />
