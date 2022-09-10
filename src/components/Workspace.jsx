@@ -11,9 +11,11 @@ import Cont from './nodes/Cont';
 import Interruption from './nodes/Interruption';
 import useListener from '../hooks/utils/useListener';
 import colors from 'tailwindcss/colors';
+import useTimeout from '../hooks/utils/useTimeout';
 
 const defaultCode = `
 let a = 1;
+(prim "debugPrint") "Hello";
 a + 1;
 `.trim();
 
@@ -37,6 +39,7 @@ export default function Workspace() {
   const [error, setError] = useState(null);
   // const history = rust.history();
   const [history, setHistory] = useState([]);
+  const [running, setRunning] = useState(false);
   const [index_, setIndex_] = useState(0);
   const [hoverIndex, setHoverIndex] = useState(null);
 
@@ -57,9 +60,19 @@ export default function Workspace() {
   const selectedInterruption =
     selectedState?.state_type === 'Interruption' ? selectedState.value : null;
 
-  const span = history[history.length - 1]?.cont_source?.span;
+  useTimeout(
+    !!running &&
+      (() => {
+        if (!forward()) {
+          setRunning(false);
+        }
+      }),
+    10,
+  );
+
+  const span = history[index]?.value.cont_source?.span;
   if (span) {
-    console.log('Span:', span.start, span.end);
+    // console.log('Span:', span.start, span.end);
 
     for (const model of monaco.editor.getModels()) {
       const start = model.getPositionAt(span.start);
@@ -127,18 +140,24 @@ export default function Workspace() {
   const forward = useCallback(() => {
     if (changed) {
       evaluate();
+      return true;
     } else {
-      setIndex(history.length - 1 + (rust.forward() ? 1 : 0));
+      const result = rust.forward();
+      setIndex(history.length - 1 + (result ? 1 : 0));
       notify();
+      return result;
     }
   }, [changed, evaluate, history.length, notify]);
 
   const backward = useCallback(() => {
     if (changed) {
       evaluate();
+      return true;
     } else {
-      setIndex(history.length - 1 - (rust.backward() ? 1 : 0));
+      const result = rust.backward();
+      setIndex(history.length - 1 - (result ? 1 : 0));
       notify();
+      return result;
     }
   }, [changed, evaluate, history.length, notify]);
 
@@ -149,7 +168,7 @@ export default function Workspace() {
         if (modifier && e.key === 'Enter') {
           e.stopPropagation();
           e.preventDefault();
-          forward();
+          setRunning(true);
         }
       } else {
         if (e.key === 'ArrowLeft') {
@@ -179,10 +198,10 @@ export default function Workspace() {
 
   return (
     <>
+      <h1 className="hidden">Motoko VM</h1>
       <div className="min-h-screen flex flex-col items-center gap-4">
         <div className="p-5 w-full flex flex-col">
-          <div>
-            <h1 className="hidden">Motoko VM</h1>
+          <div className="flex items-center">
             <div
               className={classNames(
                 'inline-block text-white p-3 pt-2 pb-4 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
@@ -198,6 +217,15 @@ export default function Workspace() {
               <br />
               VM
             </div>
+            {selectedCore?.debug_print_out && (
+              <div className="overflow-y-scroll text-[36px] ml-5">
+                {
+                  selectedCore?.debug_print_out[
+                    selectedCore?.debug_print_out.length - 1
+                  ]
+                }
+              </div>
+            )}
           </div>
           <hr className="w-full mt-5 mb-3" />
           <div className="w-full md:grid grid-cols-2 gap-4">
