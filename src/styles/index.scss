@@ -4,8 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import 'partials/variables';
-@import 'partials/hljs';
+@import 'partials/splitPane';
 
 $button-size: 44px;
 $button-border-width: 3px;

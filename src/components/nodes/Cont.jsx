@@ -1,5 +1,6 @@
 import React from 'react';
 import JsonView from 'react-json-view';
+import jsonTheme from '../../config/jsonTheme';
 
 export default function Cont({ node }) {
   const { cont_type: type, value } = node;
@@ -11,7 +12,7 @@ export default function Cont({ node }) {
       style={{ padding: '1rem' }}
       collapsed={3}
       displayDataTypes={false}
-      theme="shapeshifter"
+      theme={jsonTheme}
     ></JsonView>
   );
 

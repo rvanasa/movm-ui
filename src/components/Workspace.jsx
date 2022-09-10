@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
@@ -20,6 +14,8 @@ import colors from 'tailwindcss/colors';
 import useTimeout from '../hooks/utils/useTimeout';
 import { TransitionGroup } from 'react-transition-group';
 import CSSTransitionWrapper from './utils/CSSTransitionWrapper';
+import ResponsiveSplitPane from './utils/ResponsiveSplitPane';
+import jsonTheme from '../config/jsonTheme';
 
 const defaultCode =
   `
@@ -27,9 +23,6 @@ let a = 1;
 (prim "debugPrint") "Hello, VM!";
 a + 1;
 `.trim() + '\n';
-
-window.RUST = rust; ///
-// console.log(rust);
 
 const continuationColors = {
   Decs: '#DAB6C4',
@@ -63,6 +56,8 @@ export default function Workspace() {
 
   const changed = code.trimEnd() !== lastCode.trimEnd();
 
+  const completed = history[history.length - 1]?.state_type === 'Interruption';
+
   const monaco = useMonaco();
   const selectedState = history[index];
 
@@ -86,36 +81,81 @@ export default function Workspace() {
   useTimeout(
     running &&
       (() => {
-        if (!forward()) {
+        const result = forward();
+        if (!result) {
           setRunning(false);
+        } else if (typeof running === 'object') {
+          const { lineNumber, column } = running;
+
+          const history = rust.history();
+          const span = getSpan(history[history.length - 1]);
+          if (span) {
+            const [start, end] = getStartEndFromSpan(span);
+            if (
+              start.lineNumber === lineNumber &&
+              end.lineNumber === lineNumber &&
+              start.column <= column &&
+              end.column >= column
+            ) {
+              setRunning(false);
+            }
+          }
         }
       }),
     10,
   );
 
-  useEffect(() => {
+  const getCoreSpan = useCallback((core) => {
+    if (!core) {
+      return;
+    }
+    let source = core.cont_source;
+    if (!source) {
+      return;
+    }
+    // ExpStep
+    if (source.source) {
+      source = source.source;
+    }
+    return source.span;
+  }, []);
+
+  const getSpan = useCallback(
+    (state) => {
+      if (!state) {
+        return;
+      }
+      if (state.state_type === 'Core') {
+        return getCoreSpan(state.value);
+      }
+    },
+    [getCoreSpan],
+  );
+
+  const getStartEndFromSpan = useCallback((span) => {
+    if (!span || !editorRef.current) {
+      return;
+    }
+    const start = editorRef.current.getModel().getPositionAt(span.start);
+    const end = editorRef.current.getModel().getPositionAt(span.end);
+    return [start, end];
+  }, []);
+
+  useTimeout(() => {
     if (!monaco) {
       return;
     }
 
     const spans = [];
     if (!changed) {
-      let source = mostRecentCore?.cont_source;
-      if (source) {
-        // ExpStep
-        if (source.source) {
-          source = source.source;
-        }
-        const span = source?.span;
-        if (span) {
-          // console.log('Span:', span.start, span.end);
-
-          spans.push(span);
-        }
+      const span = getCoreSpan(mostRecentCore);
+      if (span) {
+        spans.push(span);
       }
     }
 
-    for (const model of monaco.editor.getModels()) {
+    if (editorRef.current) {
+      const model = editorRef.current.getModel();
       monaco.editor.setModelMarkers(
         model,
         'mo-vm',
@@ -135,7 +175,7 @@ export default function Workspace() {
         }),
       );
     }
-  }, [changed, monaco, mostRecentCore]);
+  }, 50);
 
   const notify = useCallback(() => {
     try {
@@ -176,9 +216,8 @@ export default function Workspace() {
 
   const editorRef = useRef();
   const updateEditor = (editor) => {
-    if (editorRef.current) {
-      editorRef.current.__handleKeyDown = (event) => onKeyDown(event, true);
-    }
+    editor.__handleKeyDown = (e) => onKeyDown(e.browserEvent, true);
+    editor.__handleMouseDown = (e) => onEditorMouseDown(e);
   };
   if (editorRef.current) {
     updateEditor(editorRef.current);
@@ -186,7 +225,8 @@ export default function Workspace() {
   const onEditorMount = (newEditor) => {
     editorRef.current = newEditor;
     updateEditor(newEditor);
-    newEditor.onKeyDown((e) => newEditor.__handleKeyDown?.(e.browserEvent));
+    newEditor.onKeyDown((e) => newEditor.__handleKeyDown(e));
+    newEditor.onMouseDown((e) => newEditor.__handleMouseDown(e));
   };
 
   const onEditorChange = (newCode) => {
@@ -226,7 +266,14 @@ export default function Workspace() {
       if (modifier && e.key === 'Enter') {
         e.stopPropagation();
         e.preventDefault();
-        evaluate(true);
+
+        const breakpoint = inEditor ? editorRef.current.getPosition() : true;
+        if (completed) {
+          evaluate(breakpoint);
+        } else {
+          setRunning(breakpoint);
+        }
+        // setRunning(true); ///
       } else if (!inEditor) {
         if (e.key === 'ArrowLeft') {
           if (modifier) {
@@ -244,9 +291,61 @@ export default function Workspace() {
         }
       }
     },
-    [evaluate, backward, index, forward],
+    [completed, evaluate, backward, index, forward],
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
+
+  const onEditorMouseDown = useCallback(
+    ({ event: e, target }) => {
+      const modifier = e.ctrlKey || e.metaKey;
+
+      if (!changed && history.length) {
+        const { lineNumber, column } = target.position;
+
+        // const selectedSpan = getSpan(selectedState);
+        // const selectedWidth = selectedSpan
+        //   ? selectedSpan.end - selectedSpan.start
+        //   : 0;
+
+        if (modifier && !completed) {
+          setRunning({ lineNumber, column });
+        }
+
+        let bestWidth = Infinity;
+        let bestIndex = 0;
+
+        for (let i = 0; i < history.length; i++) {
+          // const checkIndex =
+          //   (index + (i + 1) * (modifier ? -1 : 1) + history.length) %
+          //   history.length;
+          const checkIndex = modifier ? (index + i + 1) % history.length : i;
+          const state = history[checkIndex];
+          const span = getSpan(state);
+          if (span) {
+            const width = span.end - span.start;
+            const [start, end] = getStartEndFromSpan(span);
+            if (
+              start.lineNumber === lineNumber &&
+              end.lineNumber === lineNumber &&
+              start.column <= column &&
+              end.column >= column &&
+              (modifier || width < bestWidth)
+              //   (modifier ? width >= selectedWidth : width <= selectedWidth)
+            ) {
+              bestWidth = width;
+              bestIndex = checkIndex;
+              if (modifier) {
+                break;
+              }
+            }
+          }
+        }
+
+        setIndex(bestIndex);
+      }
+    },
+    [changed, completed, getSpan, getStartEndFromSpan, history, index],
+  );
 
   const pendingClassNames = classNames(
     (changed || error) && 'opacity-75',
@@ -289,30 +388,38 @@ export default function Workspace() {
             )}
           </div>
           <hr className="w-full mt-5 mb-3" />
-          <div className="w-full md:grid grid-cols-2 gap-4">
-            <div>
-              <div className="w-full py-4">
-                <div
-                  className="mx-auto h-[300px] rounded overflow-hidden"
-                  style={{
-                    boxShadow: '0 0 20px #222',
-                  }}
-                >
-                  <CodeEditor
-                    value={code}
-                    onChange={onEditorChange}
-                    onMount={onEditorMount}
-                  />
-                </div>
+          <ResponsiveSplitPane
+            split="vertical"
+            primary="first"
+            defaultSize="60%"
+          >
+            <ResponsiveSplitPane
+              split="horizontal"
+              primary="first"
+              defaultSize="350px"
+            >
+              <div
+                className="w-full h-full"
+                style={{
+                  boxShadow: '0 0 20px #222',
+                }}
+              >
+                <CodeEditor
+                  value={code}
+                  onChange={onEditorChange}
+                  onMount={onEditorMount}
+                />
               </div>
               <div className={pendingClassNames}>
-                <div className="text-lg flex items-center">
+                <div className="text-lg flex items-center select-none">
                   <div className="w-[60px]">
                     {!!selectedState && (
                       <pre
                         className={classNames(
                           selectedInterruption
-                            ? 'text-orange-300'
+                            ? selectedInterruption.interruption_type === 'Done'
+                              ? 'text-green-400'
+                              : 'text-orange-300'
                             : 'text-blue-400',
                         )}
                       >
@@ -330,7 +437,7 @@ export default function Workspace() {
                         <div
                           className={classNames(
                             history.length > 20 ? 'p-1' : 'p-2',
-                            'cursor-pointer select-none hover:scale-[1.2]',
+                            'cursor-pointer hover:scale-[1.2]',
                           )}
                           onClick={() => setIndex(i)}
                           onMouseOver={() => setHoverIndex(i)}
@@ -386,9 +493,8 @@ export default function Workspace() {
                   )}
                 </div>
               </div>
-              {/* <hr className="w-full m-4" /> */}
-            </div>
-            <div className="w-full flex">
+            </ResponsiveSplitPane>
+            <div>
               <div className={classNames('w-full text-lg', pendingClassNames)}>
                 {!!mostRecentCore && (
                   <JsonView
@@ -398,12 +504,12 @@ export default function Workspace() {
                     style={{ padding: '1rem' }}
                     collapsed={2}
                     displayDataTypes={false}
-                    theme="shapeshifter"
+                    theme={jsonTheme}
                   />
                 )}
               </div>
             </div>
-          </div>
+          </ResponsiveSplitPane>
         </div>
       </div>
     </>
