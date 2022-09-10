@@ -21,6 +21,7 @@ import useTimeout from '../hooks/utils/useTimeout';
 import { TransitionGroup } from 'react-transition-group';
 import CSSTransitionWrapper from './utils/CSSTransitionWrapper';
 import ResponsiveSplitPane from './utils/ResponsiveSplitPane';
+import jsonTheme from '../config/jsonTheme';
 
 const defaultCode =
   `
@@ -91,6 +92,42 @@ export default function Workspace() {
     10,
   );
 
+  const getCoreSpan = useCallback((core) => {
+    if (!core) {
+      return;
+    }
+    let source = core.cont_source;
+    if (!source) {
+      return;
+    }
+    // ExpStep
+    if (source.source) {
+      source = source.source;
+    }
+    return source.span;
+  }, []);
+
+  const getSpan = useCallback(
+    (state) => {
+      if (!state) {
+        return;
+      }
+      if (state.state_type === 'Core') {
+        return getCoreSpan(state.value);
+      }
+    },
+    [getCoreSpan],
+  );
+
+  const getStartEndFromSpan = useCallback((span) => {
+    if (!span || !editorRef.current) {
+      return;
+    }
+    const start = editorRef.current.getModel().getPositionAt(span.start);
+    const end = editorRef.current.getModel().getPositionAt(span.end);
+    return [start, end];
+  }, []);
+
   useEffect(() => {
     if (!monaco) {
       return;
@@ -98,18 +135,9 @@ export default function Workspace() {
 
     const spans = [];
     if (!changed) {
-      let source = mostRecentCore?.cont_source;
-      if (source) {
-        // ExpStep
-        if (source.source) {
-          source = source.source;
-        }
-        const span = source?.span;
-        if (span) {
-          // console.log('Span:', span.start, span.end);
-
-          spans.push(span);
-        }
+      const span = getCoreSpan(mostRecentCore);
+      if (span) {
+        spans.push(span);
       }
     }
 
@@ -134,7 +162,7 @@ export default function Workspace() {
         }),
       );
     }
-  }, [changed, monaco, mostRecentCore]);
+  }, [changed, getCoreSpan, monaco, mostRecentCore]);
 
   const notify = useCallback(() => {
     try {
@@ -175,7 +203,8 @@ export default function Workspace() {
 
   const editorRef = useRef();
   const updateEditor = (editor) => {
-    editor.__handleKeyDown = (event) => onKeyDown(event, true);
+    editor.__handleKeyDown = (e) => onKeyDown(e.browserEvent, true);
+    editor.__handleMouseDown = (e) => onEditorMouseDown(e);
   };
   if (editorRef.current) {
     updateEditor(editorRef.current);
@@ -183,7 +212,8 @@ export default function Workspace() {
   const onEditorMount = (newEditor) => {
     editorRef.current = newEditor;
     updateEditor(newEditor);
-    newEditor.onKeyDown((e) => newEditor.__handleKeyDown?.(e.browserEvent));
+    newEditor.onKeyDown((e) => newEditor.__handleKeyDown(e));
+    newEditor.onMouseDown((e) => newEditor.__handleMouseDown(e));
   };
 
   const onEditorChange = (newCode) => {
@@ -244,6 +274,54 @@ export default function Workspace() {
     [evaluate, backward, index, forward],
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
+
+  const onEditorMouseDown = useCallback(
+    ({ event: e, target }) => {
+      const modifier = e.ctrlKey || e.metaKey;
+
+      if (!changed && history.length) {
+        const { lineNumber, column } = target.position;
+
+        // const selectedSpan = getSpan(selectedState);
+        // const selectedWidth = selectedSpan
+        //   ? selectedSpan.end - selectedSpan.start
+        //   : 0;
+
+        let bestWidth = Infinity;
+        let bestIndex = 0;
+
+        for (let i = 0; i < history.length; i++) {
+          // const checkIndex =
+          //   (index + (i + 1) * (modifier ? -1 : 1) + history.length) %
+          //   history.length;
+          const checkIndex = modifier ? (index + i + 1) % history.length : i;
+          const state = history[checkIndex];
+          const span = getSpan(state);
+          if (span) {
+            const width = span.end - span.start;
+            const [start, end] = getStartEndFromSpan(span);
+            if (
+              start.lineNumber === lineNumber &&
+              end.lineNumber === lineNumber &&
+              start.column <= column &&
+              end.column >= column &&
+              (modifier || width < bestWidth)
+              //   (modifier ? width >= selectedWidth : width <= selectedWidth)
+            ) {
+              bestWidth = width;
+              bestIndex = checkIndex;
+              if (modifier) {
+                break;
+              }
+            }
+          }
+        }
+
+        setIndex(bestIndex);
+      }
+    },
+    [changed, getSpan, getStartEndFromSpan, history, index],
+  );
 
   const pendingClassNames = classNames(
     (changed || error) && 'opacity-75',
@@ -400,7 +478,7 @@ export default function Workspace() {
                     style={{ padding: '1rem' }}
                     collapsed={2}
                     displayDataTypes={false}
-                    theme="shapeshifter"
+                    theme={jsonTheme}
                   />
                 )}
               </div>
