@@ -13,11 +13,12 @@ import useListener from '../hooks/utils/useListener';
 import colors from 'tailwindcss/colors';
 import useTimeout from '../hooks/utils/useTimeout';
 
-const defaultCode = `
+const defaultCode =
+  `
 let a = 1;
-(prim "debugPrint") "Hello";
+(prim "debugPrint") "Hello, VM!";
 a + 1;
-`.trim();
+`.trim() + '\n';
 
 window.RUST = rust; ///
 // console.log(rust);
@@ -35,7 +36,8 @@ const defaultStateColor = '#FFA0AC';
 
 export default function Workspace() {
   const [code, setCode] = useState(defaultCode);
-  const [changed, setChanged] = useState(false);
+  const [lastCode, setLastCode] = useState(defaultCode);
+  // const [changed, setChanged] = useState(false);
   const [error, setError] = useState(null);
   // const history = rust.history();
   const [history, setHistory] = useState([]);
@@ -51,6 +53,8 @@ export default function Workspace() {
   const clampedIndex = Math.max(0, Math.min(index_, history.length - 1));
   const index = hoverIndex ?? clampedIndex;
 
+  const changed = code.trim() !== lastCode.trim();
+
   const monaco = useMonaco();
   const selectedState = history[index];
 
@@ -64,7 +68,7 @@ export default function Workspace() {
   for (let i = index; i > 0; i--) {
     const state = history[i];
     if (state.state_type === 'Core') {
-      mostRecentCore = state;
+      mostRecentCore = state.value;
       break;
     }
   }
@@ -112,20 +116,25 @@ export default function Workspace() {
     }
   }, []);
 
-  const evaluate = useCallback(() => {
-    try {
-      const input = preprocessMotoko(code);
-      // setHistory([]);
-      setChanged(false);
-      // setInterruption(null);
-      setError(null);
-      rust.set_input(input.code);
-      notify();
-    } catch (err) {
-      setError(err);
-      console.error(err);
-    }
-  }, [code, notify]);
+  const evaluate = useCallback(
+    (run) => {
+      try {
+        const input = preprocessMotoko(code);
+        // setHistory([]);
+        setLastCode(code);
+        // setChanged(false);
+        // setInterruption(null);
+        setError(null);
+        rust.set_input(input.code);
+        setRunning(run);
+        notify();
+      } catch (err) {
+        setError(err);
+        console.error(err);
+      }
+    },
+    [code, notify],
+  );
 
   useMemo(() => {
     evaluate();
@@ -149,7 +158,9 @@ export default function Workspace() {
 
   const onEditorChange = (newCode) => {
     setCode(newCode);
-    setChanged(true);
+    // if (lastCode.trim() !== newCode.trim()) {
+    //   setChanged(true);
+    // }
   };
 
   const forward = useCallback(() => {
@@ -183,7 +194,7 @@ export default function Workspace() {
         if (modifier && e.key === 'Enter') {
           e.stopPropagation();
           e.preventDefault();
-          setRunning(true);
+          evaluate(true);
         }
       } else {
         if (e.key === 'ArrowLeft') {
@@ -202,7 +213,7 @@ export default function Workspace() {
         }
       }
     },
-    [forward, backward, index],
+    [evaluate, backward, index, forward],
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
 
@@ -221,25 +232,29 @@ export default function Workspace() {
               className={classNames(
                 'inline-block text-white p-3 pt-2 pb-4 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
                 'transition-all duration-200',
-                error ? 'bg-red-800' : changed ? 'bg-green-700' : 'bg-[#444]',
+                error
+                  ? 'bg-red-800'
+                  : changed
+                  ? 'bg-green-700'
+                  : 'bg-[#242e5c]',
                 changed &&
                   'hover:scale-105 active:scale-110 active:duration-100',
               )}
               style={{ textShadow: '0 0 10px rgba(255,255,255,.5)' }}
-              onClick={() => evaluate()}
+              onClick={() => evaluate(true)}
             >
               Mo
               <br />
               VM
             </div>
             {mostRecentCore?.debug_print_out && (
-              <div className="overflow-y-scroll text-[36px] ml-5">
+              <pre className="overflow-y-scroll text-[30px] ml-10">
                 {
                   mostRecentCore?.debug_print_out[
                     mostRecentCore?.debug_print_out.length - 1
                   ]
                 }
-              </div>
+              </pre>
             )}
           </div>
           <hr className="w-full mt-5 mb-3" />
@@ -274,26 +289,28 @@ export default function Workspace() {
                       </pre>
                     )}
                   </div>
-                  <div className="flex-grow flex overflow-x-auto items-center">
+                  <div className="w-full flex overflow-x-auto no-scrollbar items-center">
                     {history.map((state, i) => (
                       <div
                         key={i}
-                        className="p-1 cursor-pointer select-none hover:scale-[1.2]"
+                        className={classNames(
+                          history.length > 20 ? 'p-1' : 'p-2',
+                          'cursor-pointer select-none hover:scale-[1.2]',
+                        )}
                         onClick={() => setIndex(i)}
                         onMouseOver={() => setHoverIndex(i)}
                         onMouseOut={() =>
                           hoverIndex === i && setHoverIndex(null)
                         }
                       >
-                        <div
+                        {/* <div
                           className={classNames(
                             'inline-block w-4 aspect-square rounded-sm',
+                            'animate-[scale-in_.1s_ease-out]',
                             selectedState === state && 'scale-110',
                           )}
                           style={{
-                            boxShadow: `0 0 5px ${
-                              clampedIndex === i ? 1 : 0
-                            }px #FFF`,
+                            boxShadow: clampedIndex===i&&`0 0 5px 2px #FFF`,
                             backgroundColor:
                               interruptionColors[
                                 state.value.interruption_type
@@ -301,11 +318,30 @@ export default function Workspace() {
                               continuationColors[state.value.cont?.cont_type] ||
                               defaultStateColor,
                           }}
+                        /> */}
+                        <div
+                          className={classNames(
+                            'inline-block w-[10px] aspect-square rounded-full',
+                            'animate-[scale-in_.15s_ease-out]',
+                            selectedState === state && 'scale-110',
+                          )}
+                          style={{
+                            boxShadow: `0 0 10px ${
+                              clampedIndex === i ? 4 : 2
+                            }px ${
+                              interruptionColors[
+                                state.value.interruption_type
+                              ] ||
+                              continuationColors[state.value.cont?.cont_type] ||
+                              defaultStateColor
+                            }`,
+                            backgroundColor: 'white',
+                          }}
                         />
                       </div>
                     ))}
                   </div>
-                  <div>
+                  <div className="flex">
                     <Button onClick={() => backward()}>
                       <FaCaretLeft className="mr-[2px]" />
                     </Button>
@@ -332,9 +368,9 @@ export default function Workspace() {
             </div>
             <div className="w-full flex">
               <div className={classNames('w-full text-lg', changedClassNames)}>
-                {!!selectedState && (
+                {!!mostRecentCore && (
                   <JsonView
-                    src={selectedState}
+                    src={mostRecentCore}
                     // name="core"
                     name={null}
                     style={{ padding: '1rem' }}
