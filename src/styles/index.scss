@@ -16,36 +16,37 @@ $embed-button-emphasized-color: darken(#29abe2, 5);
 html,
 body {
   font-family: 'Kanit';
-  // background: #222;
-  // color: #fff;
+  background: #080a11;
+  color: #fff;
 }
 
-.code-editor {
-  counter-reset: line;
-  overflow-x: auto !important;
-  color: black;
+hr {
+  border-color: rgba(255, 255, 255, 0.2);
+}
 
-  .code-area {
-    outline: none;
-    padding-left: 50px !important;
+@keyframes scale-in {
+  from {
+    transform: scale(0);
   }
-
-  pre {
-    padding-left: 50px !important;
+  to {
+    transform: scale(1);
   }
+}
 
-  .code-area,
-  pre {
-    white-space: pre !important;
-    word-wrap: normal !important;
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
   }
+}
 
-  .line-number {
-    position: absolute;
-    left: 0px;
-    color: #cccccc;
-    text-align: right;
-    width: 30px;
-    font-weight: 100;
+.state-animation {
+  &-enter {
+    animation: scale-in 150ms ease-out;
+  }
+  &-exit-active {
+    transform: scale(0);
+    animation: scale-in 100ms ease-out reverse;
   }
 }
