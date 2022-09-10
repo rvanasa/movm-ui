@@ -217,8 +217,8 @@ export default function Workspace() {
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
 
-  const changedClassNames = classNames(
-    changed && 'opacity-75',
+  const pendingClassNames = classNames(
+    (changed || error) && 'opacity-75',
     'transition-opacity duration-[.2s]',
   );
 
@@ -274,7 +274,7 @@ export default function Workspace() {
                   />
                 </div>
               </div>
-              <div className={changedClassNames}>
+              <div className={pendingClassNames}>
                 <div className="text-lg flex items-center">
                   <div className="w-[50px]">
                     {!!selectedState && (
@@ -367,7 +367,7 @@ export default function Workspace() {
               {/* <hr className="w-full m-4" /> */}
             </div>
             <div className="w-full flex">
-              <div className={classNames('w-full text-lg', changedClassNames)}>
+              <div className={classNames('w-full text-lg', pendingClassNames)}>
                 {!!mostRecentCore && (
                   <JsonView
                     src={mostRecentCore}
