@@ -54,11 +54,20 @@ export default function Workspace() {
   const monaco = useMonaco();
   const selectedState = history[index];
 
+  const selectedInterruption =
+    selectedState?.state_type === 'Interruption' ? selectedState.value : null;
+
   const selectedCore =
     selectedState?.state_type === 'Core' ? selectedState.value : null;
 
-  const selectedInterruption =
-    selectedState?.state_type === 'Interruption' ? selectedState.value : null;
+  let mostRecentCore = null;
+  for (let i = index; i > 0; i--) {
+    const state = history[i];
+    if (state.state_type === 'Core') {
+      mostRecentCore = state;
+      break;
+    }
+  }
 
   useTimeout(
     !!running &&
@@ -124,11 +133,17 @@ export default function Workspace() {
   }, []);
 
   const editorRef = useRef();
+  const updateEditor = (editor) => {
+    if (editorRef.current) {
+      editorRef.current.__handleKeyDown = (event) => onKeyDown(event, true);
+    }
+  };
   if (editorRef.current) {
-    editorRef.current.__handleKeyDown = (event) => onKeyDown(event, true);
+    updateEditor(editorRef.current);
   }
   const onEditorMount = (newEditor) => {
     editorRef.current = newEditor;
+    updateEditor(newEditor);
     newEditor.onKeyDown((e) => newEditor.__handleKeyDown?.(e.browserEvent));
   };
 
@@ -217,11 +232,11 @@ export default function Workspace() {
               <br />
               VM
             </div>
-            {selectedCore?.debug_print_out && (
+            {mostRecentCore?.debug_print_out && (
               <div className="overflow-y-scroll text-[36px] ml-5">
                 {
-                  selectedCore?.debug_print_out[
-                    selectedCore?.debug_print_out.length - 1
+                  mostRecentCore?.debug_print_out[
+                    mostRecentCore?.debug_print_out.length - 1
                   ]
                 }
               </div>
