@@ -1,6 +1,5 @@
-import classNames from 'classnames';
 import React, { HTMLAttributes, ReactNode, useState } from 'react';
-import { Argument } from 'classnames';
+import classNames, { Argument } from 'classnames';
 
 export interface NodeProps extends Omit<HTMLAttributes<'div'>, 'className'> {
   node: any;
