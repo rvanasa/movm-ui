@@ -62,6 +62,8 @@ export default function Workspace() {
 
   const changed = code.trimEnd() !== lastCode.trimEnd();
 
+  const completed = history[history.length - 1].state_type === 'Interruption';
+
   const monaco = useMonaco();
   const selectedState = history[index];
 
@@ -85,8 +87,25 @@ export default function Workspace() {
   useTimeout(
     running &&
       (() => {
-        if (!forward()) {
+        const result = forward();
+        if (!result) {
           setRunning(false);
+        } else if (typeof running === 'object') {
+          const { lineNumber, column } = running;
+
+          const history = rust.history();
+          const span = getSpan(history[history.length - 1]);
+          if (span) {
+            const [start, end] = getStartEndFromSpan(span);
+            if (
+              start.lineNumber === lineNumber &&
+              end.lineNumber === lineNumber &&
+              start.column <= column &&
+              end.column >= column
+            ) {
+              setRunning(false);
+            }
+          }
         }
       }),
     10,
@@ -253,7 +272,14 @@ export default function Workspace() {
       if (modifier && e.key === 'Enter') {
         e.stopPropagation();
         e.preventDefault();
-        evaluate(true);
+
+        const breakpoint = inEditor ? editorRef.current.getPosition() : true;
+        if (completed) {
+          evaluate(breakpoint);
+        } else {
+          setRunning(breakpoint);
+        }
+        // setRunning(true); ///
       } else if (!inEditor) {
         if (e.key === 'ArrowLeft') {
           if (modifier) {
@@ -271,7 +297,7 @@ export default function Workspace() {
         }
       }
     },
-    [evaluate, backward, index, forward],
+    [completed, evaluate, backward, index, forward],
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
 
@@ -286,6 +312,10 @@ export default function Workspace() {
         // const selectedWidth = selectedSpan
         //   ? selectedSpan.end - selectedSpan.start
         //   : 0;
+
+        if (modifier && !completed) {
+          setRunning({ lineNumber, column });
+        }
 
         let bestWidth = Infinity;
         let bestIndex = 0;
@@ -320,7 +350,7 @@ export default function Workspace() {
         setIndex(bestIndex);
       }
     },
-    [changed, getSpan, getStartEndFromSpan, history, index],
+    [changed, completed, getSpan, getStartEndFromSpan, history, index],
   );
 
   const pendingClassNames = classNames(
@@ -393,7 +423,9 @@ export default function Workspace() {
                       <pre
                         className={classNames(
                           selectedInterruption
-                            ? 'text-orange-300'
+                            ? selectedInterruption.interruption_type === 'Done'
+                              ? 'text-green-400'
+                              : 'text-orange-300'
                             : 'text-blue-400',
                         )}
                       >
