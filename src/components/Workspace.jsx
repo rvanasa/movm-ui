@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
@@ -52,10 +58,10 @@ export default function Workspace() {
     setIndex_(index);
   };
 
-  const clampedIndex = Math.max(0, Math.min(index_, history.length - 1));
-  const index = hoverIndex ?? clampedIndex;
+  const selectedIndex = Math.max(0, Math.min(index_, history.length - 1));
+  const index = hoverIndex ?? selectedIndex;
 
-  const changed = code.trim() !== lastCode.trim();
+  const changed = code.trimEnd() !== lastCode.trimEnd();
 
   const monaco = useMonaco();
   const selectedState = history[index];
@@ -70,7 +76,7 @@ export default function Workspace() {
   if (history.length) {
     for (let i = index; i >= 0; i--) {
       const state = history[i];
-      if (state.state_type === 'Core') {
+      if (state?.state_type === 'Core') {
         mostRecentCore = state.value;
         break;
       }
@@ -78,7 +84,7 @@ export default function Workspace() {
   }
 
   useTimeout(
-    !!running &&
+    running &&
       (() => {
         if (!forward()) {
           setRunning(false);
@@ -87,26 +93,49 @@ export default function Workspace() {
     10,
   );
 
-  const span = history[index]?.value.cont_source?.span;
-  if (span) {
-    // console.log('Span:', span.start, span.end);
+  useEffect(() => {
+    if (!monaco) {
+      return;
+    }
+
+    const spans = [];
+    if (!changed) {
+      let source = mostRecentCore?.cont_source;
+      if (source) {
+        // ExpStep
+        if (source.source) {
+          source = source.source;
+        }
+        const span = source?.span;
+        if (span) {
+          // console.log('Span:', span.start, span.end);
+
+          spans.push(span);
+        }
+      }
+    }
 
     for (const model of monaco.editor.getModels()) {
-      const start = model.getPositionAt(span.start);
-      const end = model.getPositionAt(span.end);
+      monaco.editor.setModelMarkers(
+        model,
+        'mo-vm',
+        spans.map((span) => {
+          const start = model.getPositionAt(span.start);
+          const end = model.getPositionAt(span.end);
 
-      monaco.editor.setModelMarkers(model, 'mo-vm', [
-        {
-          startLineNumber: start.lineNumber,
-          startColumn: start.column,
-          endLineNumber: end.lineNumber,
-          endColumn: end.column,
-          message: 'Most recent value',
-          severity: monaco.MarkerSeverity.Info,
-        },
-      ]);
+          // console.log('Span:', start, end);
+          return {
+            startLineNumber: start.lineNumber,
+            startColumn: start.column,
+            endLineNumber: end.lineNumber,
+            endColumn: end.column,
+            message: 'Most recent value',
+            severity: 2, //monaco.MarkerSeverity.Info,
+          };
+        }),
+      );
     }
-  }
+  }, [changed, monaco, mostRecentCore]);
 
   const notify = useCallback(() => {
     try {
@@ -317,7 +346,7 @@ export default function Workspace() {
                             )}
                             style={{
                               boxShadow: `0 0 10px ${
-                                clampedIndex === i ? 4 : 2
+                                selectedIndex === i ? 4 : 2
                               }px ${
                                 interruptionColors[
                                   state.value.interruption_type
