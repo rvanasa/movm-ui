@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
@@ -41,6 +35,31 @@ const interruptionColors = {
 };
 const defaultStateColor = '#FFA0AC';
 
+const getSyntaxErrorDetails = (err) => {
+  switch (err.syntax_error_type) {
+    case 'InvalidToken':
+      return { message: 'Unexpected token' };
+    case 'UnrecognizedEOF':
+      return {
+        message: 'Unexpected end of file',
+        code: `Expected: ${err.expected.map((s) => `'${s}'`).join(', ')}`,
+      };
+    case 'UnrecognizedToken':
+      return {
+        message: `Unexpected token '${err.token}'`,
+        code: `Expected: ${err.expected.map((s) => `'${s}'`).join(', ')}`,
+      };
+    case 'ExtraToken':
+      return {
+        message: `Extra token: '${err.token}'`,
+      };
+    case 'Custom':
+      return { message: err.message };
+    default:
+      return JSON.stringify(err);
+  }
+};
+
 export default function Workspace() {
   const [code, setCode] = useState(defaultCode);
   const [lastCode, setLastCode] = useState(defaultCode);
@@ -61,7 +80,8 @@ export default function Workspace() {
 
   const changed = code.trimEnd() !== lastCode.trimEnd();
 
-  const completed = history[history.length - 1]?.state_type === 'Interruption';
+  const completed =
+    changed || history[history.length - 1]?.state_type === 'Interruption';
 
   const monaco = useMonaco();
   const selectedState = history[index];
@@ -85,7 +105,11 @@ export default function Workspace() {
 
   useTimeout(
     running &&
+      !error &&
       (() => {
+        // if (changed) {
+        //   return;
+        // }
         const result = forward();
         if (!result) {
           setRunning(false);
@@ -147,29 +171,33 @@ export default function Workspace() {
   }, []);
 
   useEffect(() => {
-    if (!monaco) {
-      return;
-    }
-
-    const spans = [];
-    if (!changed) {
-      const span = getCoreSpan(mostRecentCore);
-      if (span) {
-        spans.push(span);
-      }
-    }
-
-    if (editorRef.current) {
+    if (monaco && editorRef.current) {
       const model = editorRef.current.getModel();
-      monaco.editor.setModelMarkers(
-        model,
-        'mo-vm',
-        spans.map((span) => {
+
+      const spans = [];
+      if (error) {
+        const start = model.getPositionAt(error.start || error.location || 0);
+        const end = model.getPositionAt(error.end || error.location || 0);
+
+        spans.push({
+          startLineNumber: start.lineNumber,
+          startColumn: start.column,
+          endLineNumber: end.lineNumber,
+          endColumn: end.column,
+          message: error.message || error.syntax_error_type,
+          // source: error.token,
+          severity: 8, //monaco.MarkerSeverity.Error,
+          ...getSyntaxErrorDetails(error),
+        });
+      }
+      if (!changed) {
+        const span = getCoreSpan(mostRecentCore);
+        if (span) {
           const start = model.getPositionAt(span.start);
           const end = model.getPositionAt(span.end);
-
           // console.log('Span:', start, end);
-          return {
+
+          spans.push({
             startLineNumber: start.lineNumber,
             startColumn: start.column,
             endLineNumber: end.lineNumber,
@@ -177,11 +205,12 @@ export default function Workspace() {
             message: 'Source location',
             source: `[${index}]`,
             severity: 2, //monaco.MarkerSeverity.Info,
-          };
-        }),
-      );
+          });
+        }
+      }
+      monaco.editor.setModelMarkers(model, 'mo-vm', spans);
     }
-  }, [changed, getCoreSpan, index, monaco, mostRecentCore]);
+  }, [changed, error, getCoreSpan, index, monaco, mostRecentCore]);
 
   const notify = useCallback(() => {
     try {
@@ -203,10 +232,14 @@ export default function Workspace() {
         setLastCode(code);
         // setChanged(false);
         // setInterruption(null);
-        setError(null);
-        rust.set_input(input.code);
-        setRunning(run);
-        notify();
+        const error = rust.set_input(input.code);
+        setError(error);
+        if (error) {
+          console.error(error);
+        } else {
+          setRunning(run);
+          notify();
+        }
       } catch (err) {
         setError(err);
         console.error(err);
@@ -215,7 +248,7 @@ export default function Workspace() {
     [code, notify],
   );
 
-  useMemo(() => {
+  useEffect(() => {
     evaluate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -382,14 +415,20 @@ export default function Workspace() {
               <br />
               VM
             </div>
-            {mostRecentCore?.debug_print_out && (
-              <pre className="overflow-y-scroll text-[30px] ml-10">
-                {
-                  mostRecentCore?.debug_print_out[
-                    mostRecentCore?.debug_print_out.length - 1
-                  ]
-                }
+            {error && !changed ? (
+              <pre className="overflow-y-scroll text-[20px] text-red-300 opacity-80 ml-10">
+                {getSyntaxErrorDetails(error).message}
               </pre>
+            ) : (
+              mostRecentCore?.debug_print_out && (
+                <pre className="overflow-y-scroll text-[30px] ml-10">
+                  {
+                    mostRecentCore?.debug_print_out[
+                      mostRecentCore?.debug_print_out.length - 1
+                    ]
+                  }
+                </pre>
+              )
             )}
           </div>
           <hr className="w-full mt-5 mb-3" />

@@ -37,14 +37,18 @@ pub fn start() {
 }
 
 #[wasm_bindgen]
-pub fn set_input(input: &str) {
-    let prog = parse(&input).expect("Unable to parse file");
+pub fn set_input(input: &str) -> JsValue {
+    match parse(&input) {
+        Ok(prog) => {
+            let core = Core::new(prog);
 
-    let core = Core::new(prog);
-
-    let history = &mut *HISTORY.lock().unwrap();
-    history.clear();
-    history.push(SendWrapper::new(HistoryState::Core(core)));
+            let history = &mut *HISTORY.lock().unwrap();
+            history.clear();
+            history.push(SendWrapper::new(HistoryState::Core(core)));
+            JsValue::undefined()
+        }
+        Err(err) => JsValue::from_serde(&err).unwrap(),
+    }
 }
 
 #[wasm_bindgen]
@@ -95,6 +99,5 @@ pub fn history() -> JsValue {
 
     let result = &history.iter().map(|c| c.clone().take()).collect::<Vec<_>>();
 
-    // serde_json::to_string().unwrap()
     JsValue::from_serde(result).unwrap()
 }
