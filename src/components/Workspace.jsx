@@ -174,13 +174,14 @@ export default function Workspace() {
             startColumn: start.column,
             endLineNumber: end.lineNumber,
             endColumn: end.column,
-            message: 'Most recent value',
+            message: 'Source location',
+            source: `[${index}]`,
             severity: 2, //monaco.MarkerSeverity.Info,
           };
         }),
       );
     }
-  }, [changed, getCoreSpan, monaco, mostRecentCore]);
+  }, [changed, getCoreSpan, index, monaco, mostRecentCore]);
 
   const notify = useCallback(() => {
     try {
