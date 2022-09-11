@@ -36,27 +36,29 @@ const interruptionColors = {
 const defaultStateColor = '#FFA0AC';
 
 const getSyntaxErrorDetails = (err) => {
+  if (!err?.syntax_error_type) {
+    return { message: '(Unexpected error)', code: String(err) };
+  }
   switch (err.syntax_error_type) {
     case 'InvalidToken':
       return { message: 'Unexpected token' };
     case 'UnrecognizedEOF':
       return {
         message: 'Unexpected end of file',
-        code: `Expected: ${err.expected.map((s) => `'${s}'`).join(', ')}`,
+        code: `expected: ${err.expected.join(', ')}`,
       };
     case 'UnrecognizedToken':
       return {
         message: `Unexpected token '${err.token}'`,
-        code: `Expected: ${err.expected.map((s) => `'${s}'`).join(', ')}`,
+        code: `expected: ${err.expected.join(', ')}`,
       };
     case 'ExtraToken':
       return {
         message: `Extra token: '${err.token}'`,
       };
-    case 'Custom':
-      return { message: err.message };
+    // case 'Custom':
     default:
-      return JSON.stringify(err);
+      return { message: err.message || err.syntax_error_type };
   }
 };
 
@@ -234,9 +236,7 @@ export default function Workspace() {
         // setInterruption(null);
         const error = rust.set_input(input.code);
         setError(error);
-        if (error) {
-          console.error(error);
-        } else {
+        if (!error) {
           setRunning(run);
           notify();
         }
