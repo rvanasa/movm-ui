@@ -42,12 +42,12 @@ const getSyntaxErrorDetails = (err) => {
     case 'UnrecognizedEOF':
       return {
         message: 'Unexpected end of file',
-        code: `Expected: ${err.expected.map((s) => `'${s}'`).join(', ')}`,
+        code: `expected: ${err.expected.join(', ')}`,
       };
     case 'UnrecognizedToken':
       return {
         message: `Unexpected token '${err.token}'`,
-        code: `Expected: ${err.expected.map((s) => `'${s}'`).join(', ')}`,
+        code: `expected: ${err.expected.join(', ')}`,
       };
     case 'ExtraToken':
       return {
