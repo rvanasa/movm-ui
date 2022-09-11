@@ -36,10 +36,14 @@ const continuationColors = {
   Value: '#5DB7DE',
   LetVarRet: '#7B886F',
 };
+const frameColors = {
+  // TODO
+};
 const interruptionColors = {
   Done: colors.green[500],
 };
 const defaultStateColor = '#FFA0AC';
+const defaultFrameColor = '#AAA';
 
 const getSyntaxErrorDetails = (err) => {
   if (!err?.syntax_error_type) {
@@ -91,7 +95,7 @@ export default function Workspace() {
   const changed = code.trimEnd() !== lastCode.trimEnd();
 
   const completed =
-    changed || !!history[history.length - 1]?.state_type === 'Interruption';
+    changed || !!(history[history.length - 1]?.state_type === 'Interruption');
 
   const monaco = useMonaco();
   const selectedState = history[index];
@@ -422,7 +426,7 @@ export default function Workspace() {
             <div
               className={classNames(
                 'inline-block text-white p-3 pt-2 pb-4 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
-                'transition-all duration-200',
+                // 'transition-all duration-200',
                 error
                   ? 'bg-red-800'
                   : changed
@@ -514,7 +518,7 @@ export default function Workspace() {
                         >
                           <div
                             className={classNames(
-                              'bg-white inline-block w-[10px] aspect-square rounded-full',
+                              'bg-white inline-block min-w-[10px] aspect-square rounded-full',
                               'transition-transform duration-[.1s]',
                               selectedState === state && 'scale-110',
                             )}
@@ -561,47 +565,48 @@ export default function Workspace() {
               </div>
             </ResponsiveSplitPane>
             <div className="flex">
-              <div className="w-[50px]">
-                <TransitionGroup className="w-full flex flex-col overflow-x-scroll items-center">
-                  {!!selectedCore &&
-                    selectedCore.stack.map((frame, i) => (
-                      <CSSTransitionWrapper
-                        key={i}
-                        timeout={150}
-                        classNames="state-animation"
+              <TransitionGroup className="w-[150px] flex flex-col overflow-x-auto">
+                {!!selectedCore &&
+                  selectedCore.stack.map((frame, i) => (
+                    <CSSTransitionWrapper
+                      key={i}
+                      timeout={150}
+                      classNames="frame-animation"
+                    >
+                      <div
+                        className={classNames(
+                          // history.length > 20 ? 'p-1' : 'p-2',
+                          'pl-3 p-1 flex items-center gap-2',
+                          'cursor-pointer hover:scale-[1.1] origin-left',
+                        )}
+                        // onClick={() => setFrameIndex(i)}
+                        onMouseOver={() => setFrameHoverIndex(i)}
+                        onMouseOut={() =>
+                          frameHoverIndex === i && setFrameHoverIndex(null)
+                        }
                       >
                         <div
                           className={classNames(
-                            // history.length > 20 ? 'p-1' : 'p-2',
-                            'p-1',
-                            'cursor-pointer hover:scale-[1.2]',
+                            'bg-white inline-block min-w-[10px] aspect-square rounded-full',
+                            // 'transition-transform duration-0',
+                            frameHoverIndex === i && 'scale-110',
                           )}
-                          // onClick={() => setFrameIndex(i)}
-                          onMouseOver={() => setFrameHoverIndex(i)}
-                          onMouseOut={() =>
-                            frameHoverIndex === i && setFrameHoverIndex(null)
-                          }
-                        >
-                          <div
-                            className={classNames(
-                              'bg-white inline-block w-[10px] aspect-square rounded-full',
-                              'transition-transform duration-[.1s]',
-                              frameHoverIndex === i && 'scale-110',
-                            )}
-                            style={{
-                              boxShadow: `0 0 10px ${
-                                selectedIndex === i ? 4 : 2
-                              }px ${
-                                continuationColors[frame.cont.cont_type] ||
-                                defaultStateColor
-                              }`,
-                            }}
-                          />
-                        </div>
-                      </CSSTransitionWrapper>
-                    ))}
-                </TransitionGroup>
-              </div>
+                          style={{
+                            boxShadow: `0 0 10px ${
+                              selectedIndex === i ? 4 : 2
+                            }px ${
+                              frameColors[frame.cont.frame_cont_type] ||
+                              defaultFrameColor
+                            }`,
+                          }}
+                        />
+                        <pre className="text-sm">
+                          {frame.cont.frame_cont_type}
+                        </pre>
+                      </div>
+                    </CSSTransitionWrapper>
+                  ))}
+              </TransitionGroup>
               <div className={classNames('w-full text-lg', pendingClassNames)}>
                 {!!mostRecentCore && (
                   <JsonView
