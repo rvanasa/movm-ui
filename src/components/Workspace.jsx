@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
@@ -38,7 +44,6 @@ const defaultStateColor = '#FFA0AC';
 export default function Workspace() {
   const [code, setCode] = useState(defaultCode);
   const [lastCode, setLastCode] = useState(defaultCode);
-  // const [changed, setChanged] = useState(false);
   const [error, setError] = useState(null);
   // const history = rust.history();
   const [history, setHistory] = useState([]);
@@ -141,7 +146,7 @@ export default function Workspace() {
     return [start, end];
   }, []);
 
-  useTimeout(() => {
+  useEffect(() => {
     if (!monaco) {
       return;
     }
@@ -175,7 +180,7 @@ export default function Workspace() {
         }),
       );
     }
-  }, 50);
+  }, [changed, getCoreSpan, monaco, mostRecentCore]);
 
   const notify = useCallback(() => {
     try {
@@ -273,7 +278,6 @@ export default function Workspace() {
         } else {
           setRunning(breakpoint);
         }
-        // setRunning(true); ///
       } else if (!inEditor) {
         if (e.key === 'ArrowLeft') {
           if (modifier) {
@@ -448,7 +452,7 @@ export default function Workspace() {
                           <div
                             className={classNames(
                               'inline-block w-[10px] aspect-square rounded-full',
-                              // 'animate-[scale-in_.15s_ease-out]',
+                              'transition-transform duration-[.1s]',
                               selectedState === state && 'scale-110',
                             )}
                             style={{
@@ -499,7 +503,6 @@ export default function Workspace() {
                 {!!mostRecentCore && (
                   <JsonView
                     src={mostRecentCore}
-                    // name="core"
                     name={null}
                     style={{ padding: '1rem' }}
                     collapsed={2}
