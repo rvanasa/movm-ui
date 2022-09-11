@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
@@ -71,10 +77,12 @@ export default function Workspace() {
   const [running, setRunning] = useState(false);
   const [index_, setIndex_] = useState(0);
   const [hoverIndex, setHoverIndex] = useState(null);
+  const [frameHoverIndex, setFrameHoverIndex] = useState(null);
 
   const setIndex = (index) => {
-    setHoverIndex(null);
     setIndex_(index);
+    setHoverIndex(null);
+    setFrameHoverIndex(null);
   };
 
   const selectedIndex = Math.max(0, Math.min(index_, history.length - 1));
@@ -83,7 +91,7 @@ export default function Workspace() {
   const changed = code.trimEnd() !== lastCode.trimEnd();
 
   const completed =
-    changed || history[history.length - 1]?.state_type === 'Interruption';
+    changed || !!history[history.length - 1]?.state_type === 'Interruption';
 
   const monaco = useMonaco();
   const selectedState = history[index];
@@ -104,6 +112,8 @@ export default function Workspace() {
       }
     }
   }
+
+  const selectedFrame = selectedCore?.stack[frameHoverIndex];
 
   useTimeout(
     running &&
@@ -248,7 +258,7 @@ export default function Workspace() {
     [code, notify],
   );
 
-  useEffect(() => {
+  useMemo(() => {
     evaluate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -345,8 +355,13 @@ export default function Workspace() {
         //   ? selectedSpan.end - selectedSpan.start
         //   : 0;
 
-        if (modifier && !completed) {
-          setRunning({ lineNumber, column });
+        if (modifier) {
+          const breakpoint = { lineNumber, column };
+          if (!completed) {
+            setRunning(breakpoint);
+          } else if (changed) {
+            evaluate(breakpoint);
+          }
         }
 
         let bestWidth = Infinity;
@@ -382,7 +397,15 @@ export default function Workspace() {
         setIndex(bestIndex);
       }
     },
-    [changed, completed, getSpan, getStartEndFromSpan, history, index],
+    [
+      changed,
+      completed,
+      evaluate,
+      getSpan,
+      getStartEndFromSpan,
+      history,
+      index,
+    ],
   );
 
   const pendingClassNames = classNames(
@@ -491,7 +514,7 @@ export default function Workspace() {
                         >
                           <div
                             className={classNames(
-                              'inline-block w-[10px] aspect-square rounded-full',
+                              'bg-white inline-block w-[10px] aspect-square rounded-full',
                               'transition-transform duration-[.1s]',
                               selectedState === state && 'scale-110',
                             )}
@@ -507,7 +530,6 @@ export default function Workspace() {
                                 ] ||
                                 defaultStateColor
                               }`,
-                              backgroundColor: 'white',
                             }}
                           />
                         </div>
@@ -538,11 +560,52 @@ export default function Workspace() {
                 </div>
               </div>
             </ResponsiveSplitPane>
-            <div>
+            <div className="flex">
+              <div className="w-[50px]">
+                <TransitionGroup className="w-full flex flex-col overflow-x-scroll items-center">
+                  {!!selectedCore &&
+                    selectedCore.stack.map((frame, i) => (
+                      <CSSTransitionWrapper
+                        key={i}
+                        timeout={150}
+                        classNames="state-animation"
+                      >
+                        <div
+                          className={classNames(
+                            // history.length > 20 ? 'p-1' : 'p-2',
+                            'p-1',
+                            'cursor-pointer hover:scale-[1.2]',
+                          )}
+                          // onClick={() => setFrameIndex(i)}
+                          onMouseOver={() => setFrameHoverIndex(i)}
+                          onMouseOut={() =>
+                            frameHoverIndex === i && setFrameHoverIndex(null)
+                          }
+                        >
+                          <div
+                            className={classNames(
+                              'bg-white inline-block w-[10px] aspect-square rounded-full',
+                              'transition-transform duration-[.1s]',
+                              frameHoverIndex === i && 'scale-110',
+                            )}
+                            style={{
+                              boxShadow: `0 0 10px ${
+                                selectedIndex === i ? 4 : 2
+                              }px ${
+                                continuationColors[frame.cont.cont_type] ||
+                                defaultStateColor
+                              }`,
+                            }}
+                          />
+                        </div>
+                      </CSSTransitionWrapper>
+                    ))}
+                </TransitionGroup>
+              </div>
               <div className={classNames('w-full text-lg', pendingClassNames)}>
                 {!!mostRecentCore && (
                   <JsonView
-                    src={mostRecentCore}
+                    src={selectedFrame ?? mostRecentCore}
                     name={null}
                     style={{ padding: '1rem' }}
                     collapsed={2}
