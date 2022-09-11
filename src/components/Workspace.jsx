@@ -38,7 +38,6 @@ const defaultStateColor = '#FFA0AC';
 export default function Workspace() {
   const [code, setCode] = useState(defaultCode);
   const [lastCode, setLastCode] = useState(defaultCode);
-  // const [changed, setChanged] = useState(false);
   const [error, setError] = useState(null);
   // const history = rust.history();
   const [history, setHistory] = useState([]);
@@ -273,7 +272,6 @@ export default function Workspace() {
         } else {
           setRunning(breakpoint);
         }
-        // setRunning(true); ///
       } else if (!inEditor) {
         if (e.key === 'ArrowLeft') {
           if (modifier) {
@@ -499,7 +497,6 @@ export default function Workspace() {
                 {!!mostRecentCore && (
                   <JsonView
                     src={mostRecentCore}
-                    // name="core"
                     name={null}
                     style={{ padding: '1rem' }}
                     collapsed={2}
