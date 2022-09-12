@@ -62,10 +62,7 @@ pub fn forward() -> bool {
         let state = history[history.len() - 1].clone().take();
         match state {
             HistoryState::Core(mut core) => {
-                let limits = motoko::vm_types::Limits {
-                    step: None,
-                    breakpoints: vec![],
-                };
+                let limits = motoko::vm_types::Limits::none();
                 if history.len() >= MAX_HISTORY_LENGTH {
                     history.pop_front();
                 }
