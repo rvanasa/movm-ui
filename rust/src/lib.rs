@@ -59,10 +59,7 @@ pub fn forward() -> bool {
         let state = history[history.len() - 1].clone().take();
         match state {
             HistoryState::Core(mut core) => {
-                let limits = motoko::vm_types::Limits {
-                    step: None,
-                    breakpoints: vec![],
-                };
+                let limits = motoko::vm_types::Limits::none();
                 match core.step(&limits) {
                     Ok(_) => {
                         history.push(SendWrapper::new(HistoryState::Core(core)));
