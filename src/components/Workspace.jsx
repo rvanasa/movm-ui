@@ -8,7 +8,7 @@ import React, {
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
-import { FaCaretLeft, FaCaretRight } from 'react-icons/fa';
+import { FaCaretLeft, FaCaretRight, FaPause } from 'react-icons/fa';
 import Button from './Button';
 import JsonView from 'react-json-view';
 import { useMonaco } from '@monaco-editor/react';
@@ -44,6 +44,45 @@ const interruptionColors = {
 };
 const defaultStateColor = '#FFA0AC';
 const defaultFrameColor = '#AAA';
+
+const getCoreSpan = (core) => {
+  if (!core) {
+    return;
+  }
+  let source = core.cont_source;
+  if (!source) {
+    return;
+  }
+  // ExpStep
+  if (source.source) {
+    source = source.source;
+  }
+  return source.span;
+};
+
+const getFrameSpan = (frame) => {
+  if (!frame) {
+    return;
+  }
+  let source = frame.source;
+  if (!source) {
+    return;
+  }
+  // ExpStep
+  if (source.source) {
+    source = source.source;
+  }
+  return source.span;
+};
+
+const getStateSpan = (state) => {
+  if (!state) {
+    return;
+  }
+  if (state.state_type === 'Core') {
+    return getCoreSpan(state.value);
+  }
+};
 
 const getSyntaxErrorDetails = (err) => {
   if (!err?.syntax_error_type) {
@@ -133,7 +172,7 @@ export default function Workspace() {
           const { lineNumber, column } = running;
 
           const history = rust.history();
-          const span = getSpan(history[history.length - 1]);
+          const span = getStateSpan(history[history.length - 1]);
           if (span) {
             const [start, end] = getStartEndFromSpan(span);
             if (
@@ -148,33 +187,6 @@ export default function Workspace() {
         }
       }),
     10,
-  );
-
-  const getCoreSpan = useCallback((core) => {
-    if (!core) {
-      return;
-    }
-    let source = core.cont_source;
-    if (!source) {
-      return;
-    }
-    // ExpStep
-    if (source.source) {
-      source = source.source;
-    }
-    return source.span;
-  }, []);
-
-  const getSpan = useCallback(
-    (state) => {
-      if (!state) {
-        return;
-      }
-      if (state.state_type === 'Core') {
-        return getCoreSpan(state.value);
-      }
-    },
-    [getCoreSpan],
   );
 
   const getStartEndFromSpan = useCallback((span) => {
@@ -207,7 +219,7 @@ export default function Workspace() {
         });
       }
       if (!changed) {
-        const span = getCoreSpan(mostRecentCore);
+        const span = getFrameSpan(selectedFrame) || getCoreSpan(mostRecentCore);
         if (span) {
           const start = model.getPositionAt(span.start);
           const end = model.getPositionAt(span.end);
@@ -226,7 +238,7 @@ export default function Workspace() {
       }
       monaco.editor.setModelMarkers(model, 'mo-vm', spans);
     }
-  }, [changed, error, getCoreSpan, index, monaco, mostRecentCore]);
+  }, [changed, error, index, monaco, mostRecentCore, selectedFrame]);
 
   const notify = useCallback(() => {
     try {
@@ -316,7 +328,11 @@ export default function Workspace() {
   const onKeyDown = useCallback(
     (e, inEditor) => {
       const modifier = e.ctrlKey || e.metaKey;
-      if (modifier && e.key === 'Enter') {
+      if (modifier && e.shiftKey && e.key === 'f') {
+        e.stopPropagation();
+        e.preventDefault();
+        editorRef.current?.getAction('editor.action.formatDocument').run();
+      } else if (modifier && e.key === 'Enter') {
         e.stopPropagation();
         e.preventDefault();
 
@@ -369,7 +385,9 @@ export default function Workspace() {
         }
 
         let bestWidth = Infinity;
-        let bestIndex = 0;
+        // let bestIndex = 0;
+        // let bestIndex = index;
+        let bestIndex = history.length - 1;
 
         for (let i = 0; i < history.length; i++) {
           // const checkIndex =
@@ -377,7 +395,7 @@ export default function Workspace() {
           //   history.length;
           const checkIndex = modifier ? (index + i + 1) % history.length : i;
           const state = history[checkIndex];
-          const span = getSpan(state);
+          const span = getStateSpan(state);
           if (span) {
             const width = span.end - span.start;
             const [start, end] = getStartEndFromSpan(span);
@@ -401,15 +419,7 @@ export default function Workspace() {
         setIndex(bestIndex);
       }
     },
-    [
-      changed,
-      completed,
-      evaluate,
-      getSpan,
-      getStartEndFromSpan,
-      history,
-      index,
-    ],
+    [changed, completed, evaluate, getStartEndFromSpan, history, index],
   );
 
   const pendingClassNames = classNames(
@@ -436,11 +446,17 @@ export default function Workspace() {
                   'hover:scale-105 active:scale-110 active:duration-100',
               )}
               style={{ textShadow: '0 0 10px rgba(255,255,255,.5)' }}
-              onClick={() => evaluate(true)}
+              onClick={() => (running ? setRunning(false) : evaluate(true))}
             >
-              Mo
-              <br />
-              VM
+              {running ? (
+                <FaPause />
+              ) : (
+                <>
+                  Mo
+                  <br />
+                  VM
+                </>
+              )}
             </div>
             {error && !changed ? (
               <pre className="overflow-y-scroll text-[20px] text-red-300 opacity-80 ml-10">
@@ -542,10 +558,10 @@ export default function Workspace() {
                   </TransitionGroup>
                   <div className="flex">
                     <Button onClick={() => backward()}>
-                      <FaCaretLeft className="mr-[2px]" />
+                      <FaCaretLeft className="mr-[2px] w-7" />
                     </Button>
                     <Button onClick={() => forward()}>
-                      <FaCaretRight className="ml-[2px]" />
+                      <FaCaretRight className="ml-[2px] w-7" />
                     </Button>
                   </div>
                 </div>
@@ -600,7 +616,14 @@ export default function Workspace() {
                             }`,
                           }}
                         />
-                        <pre className="text-sm">
+                        <pre
+                          className="text-sm"
+                          style={{
+                            color:
+                              frameColors[frame.cont.frame_cont_type] ||
+                              defaultFrameColor,
+                          }}
+                        >
                           {frame.cont.frame_cont_type}
                         </pre>
                       </div>
