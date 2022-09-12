@@ -8,7 +8,14 @@ import React, {
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
-import { FaCaretLeft, FaCaretRight, FaPause } from 'react-icons/fa';
+import { FaPauseCircle, FaPlayCircle } from 'react-icons/fa';
+import {
+  FaAngleLeft as StepLeft,
+  FaAngleRight as StepRight,
+  // FaAngleDoubleLeft as JumpLeft,
+  // FaAngleDoubleRight as JumpRight,
+  // FaPause, FaPlay,
+} from 'react-icons/fa';
 import Button from './Button';
 import JsonView from 'react-json-view';
 import { useMonaco } from '@monaco-editor/react';
@@ -121,11 +128,13 @@ export default function Workspace() {
   const [index_, setIndex_] = useState(0);
   const [hoverIndex, setHoverIndex] = useState(null);
   const [frameHoverIndex, setFrameHoverIndex] = useState(null);
+  const [frameIndex, setFrameIndex] = useState(null);
 
   const setIndex = (index) => {
     setIndex_(index);
     setHoverIndex(null);
     setFrameHoverIndex(null);
+    setFrameIndex(null);
   };
 
   const selectedIndex = Math.max(0, Math.min(index_, history.length - 1));
@@ -156,15 +165,18 @@ export default function Workspace() {
     }
   }
 
-  const selectedFrame = selectedCore?.stack[frameHoverIndex];
+  const selectedFrame = selectedCore?.stack[frameHoverIndex ?? frameIndex];
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useMemo(() => setFrameIndex(null), [selectedState]);
 
   useTimeout(
     running &&
       !error &&
       (() => {
-        // if (changed) {
-        //   return;
-        // }
+        if (changed) {
+          return;
+        }
         const result = forward();
         if (!result) {
           setRunning(false);
@@ -336,11 +348,15 @@ export default function Workspace() {
         e.stopPropagation();
         e.preventDefault();
 
-        const breakpoint = inEditor ? editorRef.current.getPosition() : true;
-        if (completed) {
-          evaluate(breakpoint);
+        if (running) {
+          setRunning(false);
         } else {
-          setRunning(breakpoint);
+          const breakpoint = inEditor ? editorRef.current.getPosition() : true;
+          if (completed) {
+            evaluate(breakpoint);
+          } else {
+            setRunning(breakpoint);
+          }
         }
       } else if (!inEditor) {
         if (e.key === 'ArrowLeft') {
@@ -359,7 +375,7 @@ export default function Workspace() {
         }
       }
     },
-    [completed, evaluate, backward, index, forward],
+    [running, completed, evaluate, backward, index, forward],
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
 
@@ -435,7 +451,7 @@ export default function Workspace() {
           <div className="flex items-center">
             <div
               className={classNames(
-                'inline-block text-white p-3 pt-2 pb-4 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
+                'flex items-center justify-center text-white text-center lowercase font-light w-[75px] aspect-square select-none cursor-pointer rounded',
                 // 'transition-all duration-200',
                 error
                   ? 'bg-red-800'
@@ -449,13 +465,14 @@ export default function Workspace() {
               onClick={() => (running ? setRunning(false) : evaluate(true))}
             >
               {running ? (
-                <FaPause />
+                <FaPauseCircle className="text-[36px]" />
+              ) : history.length > 1 && !completed ? (
+                <FaPlayCircle className="text-[36px]"> </FaPlayCircle>
               ) : (
-                <>
-                  Mo
-                  <br />
-                  VM
-                </>
+                <div className="leading-[24px] mt-[-8px] text-[36px] flex flex-col">
+                  <span>Mo</span>
+                  <span>VM</span>
+                </div>
               )}
             </div>
             {error && !changed ? (
@@ -499,7 +516,7 @@ export default function Workspace() {
               </div>
               <div className={pendingClassNames}>
                 <div className="text-lg flex items-center select-none">
-                  <div className="w-[60px]">
+                  <div className="w-[60px] ml-2">
                     {!!selectedState && (
                       <pre
                         className={classNames(
@@ -557,12 +574,27 @@ export default function Workspace() {
                     ))}
                   </TransitionGroup>
                   <div className="flex">
+                    {/* <Button onClick={() => setIndex(0)}>
+                      <JumpLeft className="mr-[2px]" />
+                    </Button> */}
                     <Button onClick={() => backward()}>
-                      <FaCaretLeft className="mr-[2px] w-7" />
+                      <StepLeft className="mr-[2px]" />
                     </Button>
+                    {/* {running ? (
+                      <Button onClick={() => setRunning(false)}>
+                        <FaPause />
+                      </Button>
+                    ) : (
+                      <Button onClick={() => setRunning(true)}>
+                        <FaPlay />
+                      </Button>
+                    )} */}
                     <Button onClick={() => forward()}>
-                      <FaCaretRight className="ml-[2px] w-7" />
+                      <StepRight className="ml-[2px]" />
                     </Button>
+                    {/* <Button onClick={() => setIndex(history.length - 1)}>
+                      <JumpRight className="ml-[2px]" />
+                    </Button> */}
                   </div>
                 </div>
                 <div className="text-lg">
@@ -580,7 +612,7 @@ export default function Workspace() {
                 </div>
               </div>
             </ResponsiveSplitPane>
-            <div className="flex">
+            <div className="flex select-none">
               <TransitionGroup className="w-[150px] flex flex-col overflow-x-auto">
                 {!!selectedCore &&
                   selectedCore.stack.map((frame, i) => (
@@ -594,8 +626,11 @@ export default function Workspace() {
                           // history.length > 20 ? 'p-1' : 'p-2',
                           'pl-3 p-1 flex items-center gap-2',
                           'cursor-pointer hover:scale-[1.1] origin-left',
+                          // frameIndex === i && 'scale-[1.15] hover:scale[1.18]',
                         )}
-                        // onClick={() => setFrameIndex(i)}
+                        onClick={() =>
+                          setFrameIndex(frameIndex === i ? null : i)
+                        }
                         onMouseOver={() => setFrameHoverIndex(i)}
                         onMouseOut={() =>
                           frameHoverIndex === i && setFrameHoverIndex(null)
@@ -620,8 +655,10 @@ export default function Workspace() {
                           className="text-sm"
                           style={{
                             color:
-                              frameColors[frame.cont.frame_cont_type] ||
-                              defaultFrameColor,
+                              frameIndex === i
+                                ? 'white'
+                                : frameColors[frame.cont.frame_cont_type] ||
+                                  defaultFrameColor,
                           }}
                         >
                           {frame.cont.frame_cont_type}
