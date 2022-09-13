@@ -129,7 +129,6 @@ export default function Workspace() {
   const [hoverIndex, setHoverIndex] = useState(null);
   const [frameHoverIndex, setFrameHoverIndex] = useState(null);
   const [frameIndex, setFrameIndex] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [detailed, setDetailed] = useState(false);
 
   const setIndex = (index) => {
@@ -401,7 +400,7 @@ export default function Workspace() {
     ({ event: e, target }) => {
       const modifier = e.ctrlKey || e.metaKey;
 
-      if (!changed && history.length) {
+      if (!changed && history.length && target.position) {
         const { lineNumber, column } = target.position;
 
         // const selectedSpan = getSpan(selectedState);
@@ -482,33 +481,39 @@ export default function Workspace() {
               style={{ textShadow: '0 0 10px rgba(255,255,255,.5)' }}
               onClick={() => (running ? setRunning(false) : evaluate(true))}
             >
-              {/* {running ? (
-                <FaPauseCircle className="text-[36px]" />
-              ) : history.length > 1 && !completed ? (
-                <FaPlayCircle className="text-[36px]"> </FaPlayCircle>
-              ) : ( */}
-              {
-                <div className="leading-[24px] mt-[-8px] text-[36px] flex flex-col">
-                  <span>Mo</span>
-                  <span>VM</span>
-                </div>
-              }
+              <div className="leading-[24px] mt-[-8px] text-[36px] flex flex-col">
+                <span>Mo</span>
+                <span>VM</span>
+              </div>
             </div>
-            {error && !changed ? (
-              <pre className="overflow-y-scroll text-[20px] text-red-300 opacity-80 ml-10">
-                {getSyntaxErrorDetails(error).message}
-              </pre>
-            ) : (
-              mostRecentCore?.debug_print_out && (
-                <pre className="overflow-y-scroll text-[30px] ml-10">
-                  {
-                    mostRecentCore?.debug_print_out[
-                      mostRecentCore?.debug_print_out.length - 1
-                    ]
-                  }
+            <div className="w-full">
+              {error && !changed ? (
+                <pre className="overflow-y-scroll text-[20px] text-red-300 opacity-80 ml-10">
+                  {getSyntaxErrorDetails(error).message}
                 </pre>
-              )
-            )}
+              ) : (
+                mostRecentCore?.debug_print_out && (
+                  <pre className="overflow-y-scroll text-[30px] ml-10">
+                    {
+                      mostRecentCore?.debug_print_out[
+                        mostRecentCore?.debug_print_out.length - 1
+                      ]
+                    }
+                  </pre>
+                )
+              )}
+            </div>
+            <div className="flex items-center select-none whitespace-nowrap">
+              <input id="toggle-detailed" type="checkbox" className="mr-2" />
+              <label
+                for="toggle-detailed"
+                className="opacity-90"
+                value={detailed}
+                onChange={() => setDetailed(!detailed)}
+              >
+                Detailed Output
+              </label>
+            </div>
           </div>
           <hr className="w-full mt-5 mb-3" />
           <ResponsiveSplitPane
@@ -599,7 +604,7 @@ export default function Workspace() {
                     <Button onClick={() => backward()}>
                       <StepLeft className="mr-[2px]" />
                     </Button>
-                    {running ? (
+                    {running && !error ? (
                       <Button onClick={() => setRunning(false)}>
                         <FaPause className="mx-2" />
                       </Button>
@@ -650,7 +655,7 @@ export default function Workspace() {
                       <div
                         className={classNames(
                           // history.length > 20 ? 'p-1' : 'p-2',
-                          'pl-3 p-1 flex items-center gap-2',
+                          'pl-4 p-1 flex items-center gap-2',
                           'cursor-pointer hover:scale-[1.1] origin-left',
                           // frameIndex === i && 'scale-[1.15] hover:scale[1.18]',
                         )}
