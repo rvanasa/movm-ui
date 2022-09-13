@@ -465,7 +465,7 @@ export default function Workspace() {
   return (
     <>
       <h1 className="hidden">Motoko VM</h1>
-      <div className="min-h-screen flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-4">
         <div className="p-5 w-full flex flex-col">
           <div className="flex items-center">
             <div

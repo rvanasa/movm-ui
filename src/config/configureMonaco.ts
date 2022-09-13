@@ -7,12 +7,11 @@ export const configureMonaco = (monaco) => {
   configure(monaco);
 
   // Asynchronously load WASM
-  import('prettier-plugin-motoko/lib/environments/web')
+  import('prettier-plugin-motoko/src/environments/web')
     .then((motokoPlugin) => {
       monaco.languages.registerDocumentFormattingEditProvider('motoko', {
         provideDocumentFormattingEdits(model, _options, _token) {
           const source = model.getValue();
-          // console.log(motokoPlugin)///
           const formatted = prettier.format(source, {
             plugins: [motokoPlugin],
             filepath: '*.mo',
