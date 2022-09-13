@@ -552,7 +552,10 @@ export default function Workspace() {
                             : 'text-blue-400',
                         )}
                       >
-                        [{index}]
+                        [
+                        {mostRecentCore?.counts
+                          .redex /* [detailed ? 'step' : 'redex'] */ ?? '-'}
+                        ]
                       </pre>
                     )}
                   </div>
