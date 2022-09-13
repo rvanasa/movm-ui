@@ -8,7 +8,14 @@ import React, {
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
-import { FaCaretLeft, FaCaretRight } from 'react-icons/fa';
+import {
+  FaAngleLeft as StepLeft,
+  FaAngleRight as StepRight,
+  // FaAngleDoubleLeft as JumpLeft,
+  // FaAngleDoubleRight as JumpRight,
+  FaPause,
+  FaPlay,
+} from 'react-icons/fa';
 import Button from './Button';
 import JsonView from 'react-json-view';
 import { useMonaco } from '@monaco-editor/react';
@@ -22,6 +29,7 @@ import { TransitionGroup } from 'react-transition-group';
 import CSSTransitionWrapper from './utils/CSSTransitionWrapper';
 import ResponsiveSplitPane from './utils/ResponsiveSplitPane';
 import jsonTheme from '../config/jsonTheme';
+import { useSessionStorage } from 'usehooks-ts';
 
 const defaultCode =
   `
@@ -44,6 +52,45 @@ const interruptionColors = {
 };
 const defaultStateColor = '#FFA0AC';
 const defaultFrameColor = '#AAA';
+
+const getCoreSpan = (core) => {
+  if (!core) {
+    return;
+  }
+  let source = core.cont_source;
+  if (!source) {
+    return;
+  }
+  // ExpStep
+  if (source.source) {
+    source = source.source;
+  }
+  return source.span;
+};
+
+const getFrameSpan = (frame) => {
+  if (!frame) {
+    return;
+  }
+  let source = frame.source;
+  if (!source) {
+    return;
+  }
+  // ExpStep
+  if (source.source) {
+    source = source.source;
+  }
+  return source.span;
+};
+
+const getStateSpan = (state) => {
+  if (!state) {
+    return;
+  }
+  if (state.state_type === 'Core') {
+    return getCoreSpan(state.value);
+  }
+};
 
 const getSyntaxErrorDetails = (err) => {
   if (!err?.syntax_error_type) {
@@ -82,11 +129,15 @@ export default function Workspace() {
   const [index_, setIndex_] = useState(0);
   const [hoverIndex, setHoverIndex] = useState(null);
   const [frameHoverIndex, setFrameHoverIndex] = useState(null);
+  const [frameIndex, setFrameIndex] = useState(null);
+  // const [detailed, setDetailed] = useState(false);
+  const [detailed, setDetailed] = useSessionStorage('mo-vm.detailed', false);
 
   const setIndex = (index) => {
     setIndex_(index);
     setHoverIndex(null);
     setFrameHoverIndex(null);
+    setFrameIndex(null);
   };
 
   const selectedIndex = Math.max(0, Math.min(index_, history.length - 1));
@@ -117,15 +168,18 @@ export default function Workspace() {
     }
   }
 
-  const selectedFrame = selectedCore?.stack[frameHoverIndex];
+  const selectedFrame = selectedCore?.stack[frameHoverIndex ?? frameIndex];
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useMemo(() => setFrameIndex(null), [selectedState]);
 
   useTimeout(
     running &&
       !error &&
       (() => {
-        // if (changed) {
-        //   return;
-        // }
+        if (changed) {
+          return;
+        }
         const result = forward();
         if (!result) {
           setRunning(false);
@@ -133,7 +187,7 @@ export default function Workspace() {
           const { lineNumber, column } = running;
 
           const history = rust.history();
-          const span = getSpan(history[history.length - 1]);
+          const span = getStateSpan(history[history.length - 1]);
           if (span) {
             const [start, end] = getStartEndFromSpan(span);
             if (
@@ -148,33 +202,6 @@ export default function Workspace() {
         }
       }),
     10,
-  );
-
-  const getCoreSpan = useCallback((core) => {
-    if (!core) {
-      return;
-    }
-    let source = core.cont_source;
-    if (!source) {
-      return;
-    }
-    // ExpStep
-    if (source.source) {
-      source = source.source;
-    }
-    return source.span;
-  }, []);
-
-  const getSpan = useCallback(
-    (state) => {
-      if (!state) {
-        return;
-      }
-      if (state.state_type === 'Core') {
-        return getCoreSpan(state.value);
-      }
-    },
-    [getCoreSpan],
   );
 
   const getStartEndFromSpan = useCallback((span) => {
@@ -192,8 +219,8 @@ export default function Workspace() {
 
       const spans = [];
       if (error) {
-        const start = model.getPositionAt(error.start || error.location || 0);
-        const end = model.getPositionAt(error.end || error.location || 0);
+        const start = model.getPositionAt(error.start ?? error.location ?? 0);
+        const end = model.getPositionAt(error.end ?? error.location ?? 0);
 
         spans.push({
           startLineNumber: start.lineNumber,
@@ -207,7 +234,13 @@ export default function Workspace() {
         });
       }
       if (!changed) {
-        const span = getCoreSpan(mostRecentCore);
+        const span =
+          getFrameSpan(selectedFrame) ||
+          getCoreSpan(
+            selectedInterruption?.interruption_type === 'Done'
+              ? null // No underline on successful completion
+              : mostRecentCore,
+          );
         if (span) {
           const start = model.getPositionAt(span.start);
           const end = model.getPositionAt(span.end);
@@ -226,7 +259,15 @@ export default function Workspace() {
       }
       monaco.editor.setModelMarkers(model, 'mo-vm', spans);
     }
-  }, [changed, error, getCoreSpan, index, monaco, mostRecentCore]);
+  }, [
+    changed,
+    error,
+    index,
+    monaco,
+    mostRecentCore,
+    selectedFrame,
+    selectedInterruption?.interruption_type,
+  ]);
 
   const notify = useCallback(() => {
     try {
@@ -294,12 +335,12 @@ export default function Workspace() {
       evaluate();
       return true;
     } else {
-      const result = rust.forward();
+      const result = rust.forward(detailed);
       setIndex(history.length - 1 + (result ? 1 : 0));
       notify();
       return result;
     }
-  }, [changed, evaluate, history.length, notify]);
+  }, [changed, detailed, evaluate, history.length, notify]);
 
   const backward = useCallback(() => {
     if (changed) {
@@ -316,15 +357,25 @@ export default function Workspace() {
   const onKeyDown = useCallback(
     (e, inEditor) => {
       const modifier = e.ctrlKey || e.metaKey;
-      if (modifier && e.key === 'Enter') {
+      if (e.key === 'Escape') {
+        setRunning(false);
+      } else if (modifier && e.shiftKey && e.key === 'f') {
+        e.stopPropagation();
+        e.preventDefault();
+        editorRef.current?.getAction('editor.action.formatDocument').run();
+      } else if (modifier && e.key === 'Enter') {
         e.stopPropagation();
         e.preventDefault();
 
-        const breakpoint = inEditor ? editorRef.current.getPosition() : true;
-        if (completed) {
-          evaluate(breakpoint);
+        if (running) {
+          setRunning(false);
         } else {
-          setRunning(breakpoint);
+          const breakpoint = inEditor ? editorRef.current.getPosition() : true;
+          if (completed) {
+            evaluate(breakpoint);
+          } else {
+            setRunning(breakpoint);
+          }
         }
       } else if (!inEditor) {
         if (e.key === 'ArrowLeft') {
@@ -343,7 +394,7 @@ export default function Workspace() {
         }
       }
     },
-    [completed, evaluate, backward, index, forward],
+    [running, completed, evaluate, backward, index, forward],
   );
   useListener(document, 'keydown', (e) => onKeyDown(e, false));
 
@@ -351,7 +402,7 @@ export default function Workspace() {
     ({ event: e, target }) => {
       const modifier = e.ctrlKey || e.metaKey;
 
-      if (!changed && history.length) {
+      if (!changed && history.length && target.position) {
         const { lineNumber, column } = target.position;
 
         // const selectedSpan = getSpan(selectedState);
@@ -369,7 +420,9 @@ export default function Workspace() {
         }
 
         let bestWidth = Infinity;
-        let bestIndex = 0;
+        // let bestIndex = 0;
+        // let bestIndex = index;
+        let bestIndex = history.length - 1;
 
         for (let i = 0; i < history.length; i++) {
           // const checkIndex =
@@ -377,7 +430,7 @@ export default function Workspace() {
           //   history.length;
           const checkIndex = modifier ? (index + i + 1) % history.length : i;
           const state = history[checkIndex];
-          const span = getSpan(state);
+          const span = getStateSpan(state);
           if (span) {
             const width = span.end - span.start;
             const [start, end] = getStartEndFromSpan(span);
@@ -401,15 +454,7 @@ export default function Workspace() {
         setIndex(bestIndex);
       }
     },
-    [
-      changed,
-      completed,
-      evaluate,
-      getSpan,
-      getStartEndFromSpan,
-      history,
-      index,
-    ],
+    [changed, completed, evaluate, getStartEndFromSpan, history, index],
   );
 
   const pendingClassNames = classNames(
@@ -425,7 +470,7 @@ export default function Workspace() {
           <div className="flex items-center">
             <div
               className={classNames(
-                'inline-block text-white p-3 pt-2 pb-4 text-[50px] text-center lowercase font-extralight select-none leading-[36px] cursor-pointer rounded',
+                'flex items-center justify-center text-white text-center lowercase font-light w-[75px] aspect-square select-none cursor-pointer rounded',
                 // 'transition-all duration-200',
                 error
                   ? 'bg-red-800'
@@ -436,27 +481,40 @@ export default function Workspace() {
                   'hover:scale-105 active:scale-110 active:duration-100',
               )}
               style={{ textShadow: '0 0 10px rgba(255,255,255,.5)' }}
-              onClick={() => evaluate(true)}
+              onClick={() => (running ? setRunning(false) : evaluate(true))}
             >
-              Mo
-              <br />
-              VM
+              <div className="leading-[24px] mt-[-8px] text-[36px] flex flex-col">
+                <span>Mo</span>
+                <span>VM</span>
+              </div>
             </div>
-            {error && !changed ? (
-              <pre className="overflow-y-scroll text-[20px] text-red-300 opacity-80 ml-10">
-                {getSyntaxErrorDetails(error).message}
-              </pre>
-            ) : (
-              mostRecentCore?.debug_print_out && (
-                <pre className="overflow-y-scroll text-[30px] ml-10">
-                  {
-                    mostRecentCore?.debug_print_out[
-                      mostRecentCore?.debug_print_out.length - 1
-                    ]
-                  }
+            <div className="flex-grow overflow-auto">
+              {error && !changed ? (
+                <pre className="text-[20px] text-red-300 opacity-80 ml-10">
+                  {getSyntaxErrorDetails(error).message}
                 </pre>
-              )
-            )}
+              ) : (
+                mostRecentCore?.debug_print_out && (
+                  <pre className="text-[30px] ml-10">
+                    {
+                      mostRecentCore?.debug_print_out[
+                        mostRecentCore?.debug_print_out.length - 1
+                      ]
+                    }
+                  </pre>
+                )
+              )}
+            </div>
+            <div className="px-3 flex items-center select-none whitespace-nowrap opacity-[.9]">
+              <input
+                id="toggle-detailed"
+                type="checkbox"
+                className="mr-2"
+                checked={detailed}
+                onChange={() => setDetailed(!detailed)}
+              />
+              <label htmlFor="toggle-detailed">Detail Mode</label>
+            </div>
           </div>
           <hr className="w-full mt-5 mb-3" />
           <ResponsiveSplitPane
@@ -483,7 +541,7 @@ export default function Workspace() {
               </div>
               <div className={pendingClassNames}>
                 <div className="text-lg flex items-center select-none">
-                  <div className="w-[60px]">
+                  <div className="w-[60px] ml-2">
                     {!!selectedState && (
                       <pre
                         className={classNames(
@@ -494,7 +552,10 @@ export default function Workspace() {
                             : 'text-blue-400',
                         )}
                       >
-                        [{index}]
+                        [
+                        {mostRecentCore?.counts
+                          .redex /* [detailed ? 'step' : 'redex'] */ ?? '-'}
+                        ]
                       </pre>
                     )}
                   </div>
@@ -541,12 +602,46 @@ export default function Workspace() {
                     ))}
                   </TransitionGroup>
                   <div className="flex">
+                    {/* <div className="px-3 flex items-center select-none whitespace-nowrap">
+                      <input
+                        id="toggle-detailed"
+                        type="checkbox"
+                        className="mr-2"
+                        value={detailed}
+                        onChange={() => setDetailed(!detailed)}
+                      />
+                      <label htmlFor="toggle-detailed" className="opacity-90">
+                        Detailed
+                      </label>
+                    </div> */}
+                    {/* <Button onClick={() => setIndex(0)}>
+                      <JumpLeft className="mr-[2px]" />
+                    </Button> */}
                     <Button onClick={() => backward()}>
-                      <FaCaretLeft className="mr-[2px]" />
+                      <StepLeft className="mr-[2px]" />
                     </Button>
+                    {running && !error ? (
+                      <Button onClick={() => setRunning(false)}>
+                        <FaPause className="mx-2" />
+                      </Button>
+                    ) : (
+                      <Button
+                        onClick={() => {
+                          if (completed) {
+                            evaluate();
+                          }
+                          setRunning(true);
+                        }}
+                      >
+                        <FaPlay className="mx-2" />
+                      </Button>
+                    )}
                     <Button onClick={() => forward()}>
-                      <FaCaretRight className="ml-[2px]" />
+                      <StepRight className="ml-[2px]" />
                     </Button>
+                    {/* <Button onClick={() => setIndex(history.length - 1)}>
+                      <JumpRight className="ml-[2px]" />
+                    </Button> */}
                   </div>
                 </div>
                 <div className="text-lg">
@@ -564,7 +659,7 @@ export default function Workspace() {
                 </div>
               </div>
             </ResponsiveSplitPane>
-            <div className="flex">
+            <div className="flex select-none">
               <TransitionGroup className="w-[150px] flex flex-col overflow-x-auto">
                 {!!selectedCore &&
                   selectedCore.stack.map((frame, i) => (
@@ -576,10 +671,13 @@ export default function Workspace() {
                       <div
                         className={classNames(
                           // history.length > 20 ? 'p-1' : 'p-2',
-                          'pl-3 p-1 flex items-center gap-2',
+                          'pl-4 p-1 flex items-center gap-2',
                           'cursor-pointer hover:scale-[1.1] origin-left',
+                          // frameIndex === i && 'scale-[1.15] hover:scale[1.18]',
                         )}
-                        // onClick={() => setFrameIndex(i)}
+                        onClick={() =>
+                          setFrameIndex(frameIndex === i ? null : i)
+                        }
                         onMouseOver={() => setFrameHoverIndex(i)}
                         onMouseOut={() =>
                           frameHoverIndex === i && setFrameHoverIndex(null)
@@ -600,7 +698,16 @@ export default function Workspace() {
                             }`,
                           }}
                         />
-                        <pre className="text-sm">
+                        <pre
+                          className="text-sm"
+                          style={{
+                            color:
+                              frameIndex === i
+                                ? 'white'
+                                : frameColors[frame.cont.frame_cont_type] ||
+                                  defaultFrameColor,
+                          }}
+                        >
                           {frame.cont.frame_cont_type}
                         </pre>
                       </div>
@@ -612,7 +719,7 @@ export default function Workspace() {
                   <JsonView
                     src={selectedFrame ?? mostRecentCore}
                     name={null}
-                    style={{ padding: '1rem' }}
+                    style={{ padding: '1rem', background: 'rgba(0,0,0,0)' }}
                     collapsed={2}
                     displayDataTypes={false}
                     theme={jsonTheme}

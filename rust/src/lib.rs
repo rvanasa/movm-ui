@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::sync::Mutex;
 
 use lazy_static::lazy_static;
@@ -7,6 +8,8 @@ use wasm_bindgen::prelude::*;
 
 use motoko::check::parse;
 use motoko::vm_types::{Core, Interruption};
+
+const MAX_HISTORY_LENGTH: usize = 100;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
@@ -21,7 +24,7 @@ pub enum HistoryState {
 
 lazy_static! {
     #[wasm_bindgen]
-    static ref HISTORY: Mutex<Vec<SendWrapper<HistoryState>>> = Mutex::new(vec![]);
+    static ref HISTORY: Mutex<VecDeque<SendWrapper<HistoryState>>> = Mutex::new(VecDeque::with_capacity(MAX_HISTORY_LENGTH));
 }
 
 #[wasm_bindgen]
@@ -44,7 +47,7 @@ pub fn set_input(input: &str) -> JsValue {
 
             let history = &mut *HISTORY.lock().unwrap();
             history.clear();
-            history.push(SendWrapper::new(HistoryState::Core(core)));
+            history.push_back(SendWrapper::new(HistoryState::Core(core)));
             JsValue::undefined()
         }
         Err(err) => JsValue::from_serde(&err).unwrap(),
@@ -52,7 +55,7 @@ pub fn set_input(input: &str) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn forward() -> bool {
+pub fn forward(detailed: bool) -> bool {
     let history = &mut *HISTORY.lock().unwrap();
 
     if !history.is_empty() {
@@ -60,17 +63,21 @@ pub fn forward() -> bool {
         match state {
             HistoryState::Core(mut core) => {
                 let limits = motoko::vm_types::Limits::none();
-                match core.step(&limits) {
-                    Ok(_) => {
-                        history.push(SendWrapper::new(HistoryState::Core(core)));
-                        true
-                    }
-                    // Err(end) => JsValue::from_serde(&end).unwrap(),
-                    Err(end) => {
-                        history.push(SendWrapper::new(HistoryState::Interruption(end)));
-                        true
+                let redex_count = core.counts.redex;
+                loop {
+                    let step = core.step(&limits);
+                    if detailed || step.is_err() || core.counts.redex != redex_count {
+                        if history.len() >= MAX_HISTORY_LENGTH {
+                            history.pop_front();
+                        };
+                        history.push_back(SendWrapper::new(match step {
+                            Ok(_) => HistoryState::Core(core.clone()),
+                            Err(ref end) => HistoryState::Interruption(end.clone()),
+                        }));
+                        break;
                     }
                 }
+                true
             }
             HistoryState::Interruption(_) => false,
         }
@@ -83,7 +90,7 @@ pub fn forward() -> bool {
 pub fn backward() -> bool {
     let history = &mut *HISTORY.lock().unwrap();
     if history.len() > 1 {
-        history.pop();
+        history.pop_back();
         true
     } else {
         false
@@ -94,7 +101,27 @@ pub fn backward() -> bool {
 pub fn history() -> JsValue {
     let history = &mut *HISTORY.lock().unwrap();
 
-    let result = &history.iter().map(|c| c.clone().take()).collect::<Vec<_>>();
+    let result = history.iter().map(|c| c.clone().take()).collect::<Vec<_>>();
 
-    JsValue::from_serde(result).unwrap()
+    // let result = if detailed {
+    //     history.iter().map(|c| c.clone().take()).collect::<Vec<_>>()
+    // } else {
+    //     let mut result = vec![];
+    //     let mut redex_count = 0;
+    //     for (i, state) in history.iter().enumerate() {
+    //         let state = state.clone().take(); // TODO get reference and clone later
+    //         match state {
+    //             HistoryState::Core(ref core) => {
+    //                 if i == 0 || core.counts.redex > redex_count {
+    //                     redex_count = core.counts.redex;
+    //                     result.push(state)
+    //                 }
+    //             }
+    //             HistoryState::Interruption(_) => result.push(state),
+    //         }
+    //     }
+    //     result
+    // };
+
+    JsValue::from_serde(&result).unwrap()
 }

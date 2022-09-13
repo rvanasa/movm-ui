@@ -9,7 +9,7 @@ export default function Cont({ node }) {
     <JsonView
       src={typeof value === 'object' ? value : { value }}
       name={type}
-      style={{ padding: '1rem' }}
+      style={{ padding: '1rem', background: 'rgba(0,0,0,0)' }}
       collapsed={3}
       displayDataTypes={false}
       theme={jsonTheme}
