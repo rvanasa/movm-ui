@@ -8,13 +8,13 @@ import React, {
 import CodeEditor from './CodeEditor';
 import preprocessMotoko from '../utils/preprocessMotoko';
 import rust from '../rust';
-import { FaPauseCircle, FaPlayCircle } from 'react-icons/fa';
 import {
   FaAngleLeft as StepLeft,
   FaAngleRight as StepRight,
   // FaAngleDoubleLeft as JumpLeft,
   // FaAngleDoubleRight as JumpRight,
-  // FaPause, FaPlay,
+  FaPause,
+  FaPlay,
 } from 'react-icons/fa';
 import Button from './Button';
 import JsonView from 'react-json-view';
@@ -218,8 +218,8 @@ export default function Workspace() {
 
       const spans = [];
       if (error) {
-        const start = model.getPositionAt(error.start || error.location || 0);
-        const end = model.getPositionAt(error.end || error.location || 0);
+        const start = model.getPositionAt(error.start ?? error.location ?? 0);
+        const end = model.getPositionAt(error.end ?? error.location ?? 0);
 
         spans.push({
           startLineNumber: start.lineNumber,
@@ -233,7 +233,13 @@ export default function Workspace() {
         });
       }
       if (!changed) {
-        const span = getFrameSpan(selectedFrame) || getCoreSpan(mostRecentCore);
+        const span =
+          getFrameSpan(selectedFrame) ||
+          getCoreSpan(
+            selectedInterruption?.interruption_type === 'Done'
+              ? null // No underline on successful completion
+              : mostRecentCore,
+          );
         if (span) {
           const start = model.getPositionAt(span.start);
           const end = model.getPositionAt(span.end);
@@ -252,7 +258,15 @@ export default function Workspace() {
       }
       monaco.editor.setModelMarkers(model, 'mo-vm', spans);
     }
-  }, [changed, error, index, monaco, mostRecentCore, selectedFrame]);
+  }, [
+    changed,
+    error,
+    index,
+    monaco,
+    mostRecentCore,
+    selectedFrame,
+    selectedInterruption?.interruption_type,
+  ]);
 
   const notify = useCallback(() => {
     try {
@@ -468,16 +482,17 @@ export default function Workspace() {
               style={{ textShadow: '0 0 10px rgba(255,255,255,.5)' }}
               onClick={() => (running ? setRunning(false) : evaluate(true))}
             >
-              {running ? (
+              {/* {running ? (
                 <FaPauseCircle className="text-[36px]" />
               ) : history.length > 1 && !completed ? (
                 <FaPlayCircle className="text-[36px]"> </FaPlayCircle>
-              ) : (
+              ) : ( */}
+              {
                 <div className="leading-[24px] mt-[-8px] text-[36px] flex flex-col">
                   <span>Mo</span>
                   <span>VM</span>
                 </div>
-              )}
+              }
             </div>
             {error && !changed ? (
               <pre className="overflow-y-scroll text-[20px] text-red-300 opacity-80 ml-10">
@@ -584,15 +599,22 @@ export default function Workspace() {
                     <Button onClick={() => backward()}>
                       <StepLeft className="mr-[2px]" />
                     </Button>
-                    {/* {running ? (
+                    {running ? (
                       <Button onClick={() => setRunning(false)}>
-                        <FaPause />
+                        <FaPause className="mx-2" />
                       </Button>
                     ) : (
-                      <Button onClick={() => setRunning(true)}>
-                        <FaPlay />
+                      <Button
+                        onClick={() => {
+                          if (completed) {
+                            evaluate();
+                          }
+                          setRunning(true);
+                        }}
+                      >
+                        <FaPlay className="mx-2" />
                       </Button>
-                    )} */}
+                    )}
                     <Button onClick={() => forward()}>
                       <StepRight className="ml-[2px]" />
                     </Button>
