@@ -495,7 +495,7 @@ export default function Workspace() {
                 </pre>
               ) : (
                 mostRecentCore?.debug_print_out && (
-                  <pre className="text-[30px] ml-10">
+                  <pre className="text-[24px] ml-10">
                     {
                       mostRecentCore?.debug_print_out[
                         mostRecentCore?.debug_print_out.length - 1
@@ -601,7 +601,7 @@ export default function Workspace() {
                       </CSSTransitionWrapper>
                     ))}
                   </TransitionGroup>
-                  <div className="flex">
+                  <div className="flex gap-1">
                     {/* <div className="px-3 flex items-center select-none whitespace-nowrap">
                       <input
                         id="toggle-detailed"
@@ -722,6 +722,7 @@ export default function Workspace() {
                     style={{ padding: '1rem', background: 'rgba(0,0,0,0)' }}
                     collapsed={2}
                     displayDataTypes={false}
+                    enableClipboard={false}
                     theme={jsonTheme}
                   />
                 )}
