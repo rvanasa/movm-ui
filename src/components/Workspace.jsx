@@ -601,7 +601,7 @@ export default function Workspace() {
                       </CSSTransitionWrapper>
                     ))}
                   </TransitionGroup>
-                  <div className="flex">
+                  <div className="flex gap-1">
                     {/* <div className="px-3 flex items-center select-none whitespace-nowrap">
                       <input
                         id="toggle-detailed"
