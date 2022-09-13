@@ -55,7 +55,7 @@ pub fn set_input(input: &str) -> JsValue {
 }
 
 #[wasm_bindgen]
-pub fn forward() -> bool {
+pub fn forward(detailed: bool) -> bool {
     let history = &mut *HISTORY.lock().unwrap();
 
     if !history.is_empty() {
@@ -63,13 +63,20 @@ pub fn forward() -> bool {
         match state {
             HistoryState::Core(mut core) => {
                 let limits = motoko::vm_types::Limits::none();
-                if history.len() >= MAX_HISTORY_LENGTH {
-                    history.pop_front();
+                let redex_count = core.counts.step_redex;
+                loop {
+                    if history.len() >= MAX_HISTORY_LENGTH {
+                        history.pop_front();
+                    };
+                    let step = core.step(&limits);
+                    history.push_back(SendWrapper::new(match step {
+                        Ok(_) => HistoryState::Core(core.clone()),
+                        Err(ref end) => HistoryState::Interruption(end.clone()),
+                    }));
+                    if step.is_err() || core.counts.step_redex != redex_count {
+                        break;
+                    }
                 }
-                history.push_back(SendWrapper::new(match core.step(&limits) {
-                    Ok(_) => HistoryState::Core(core),
-                    Err(end) => HistoryState::Interruption(end),
-                }));
                 true
             }
             HistoryState::Interruption(_) => false,
@@ -92,6 +99,8 @@ pub fn backward() -> bool {
 
 #[wasm_bindgen]
 pub fn history(detailed: bool) -> JsValue {
+    // let detailed = false; //temp
+
     let history = &mut *HISTORY.lock().unwrap();
 
     let result = if detailed {

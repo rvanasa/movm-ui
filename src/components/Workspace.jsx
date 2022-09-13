@@ -129,6 +129,8 @@ export default function Workspace() {
   const [hoverIndex, setHoverIndex] = useState(null);
   const [frameHoverIndex, setFrameHoverIndex] = useState(null);
   const [frameIndex, setFrameIndex] = useState(null);
+  // eslint-disable-next-line no-unused-vars
+  const [detailed, setDetailed] = useState(false);
 
   const setIndex = (index) => {
     setIndex_(index);
@@ -183,7 +185,7 @@ export default function Workspace() {
         } else if (typeof running === 'object') {
           const { lineNumber, column } = running;
 
-          const history = rust.history();
+          const history = rust.history(detailed);
           const span = getStateSpan(history[history.length - 1]);
           if (span) {
             const [start, end] = getStartEndFromSpan(span);
@@ -254,7 +256,7 @@ export default function Workspace() {
 
   const notify = useCallback(() => {
     try {
-      const history = rust.history();
+      const history = rust.history(detailed);
       setHistory(history);
       // setIndex(history.length - 1);
       setError(null);
@@ -262,7 +264,7 @@ export default function Workspace() {
       setError(err);
       console.error(err);
     }
-  }, []);
+  }, [detailed]);
 
   const evaluate = useCallback(
     (run) => {
@@ -318,12 +320,12 @@ export default function Workspace() {
       evaluate();
       return true;
     } else {
-      const result = rust.forward();
+      const result = rust.forward(detailed);
       setIndex(history.length - 1 + (result ? 1 : 0));
       notify();
       return result;
     }
-  }, [changed, evaluate, history.length, notify]);
+  }, [changed, detailed, evaluate, history.length, notify]);
 
   const backward = useCallback(() => {
     if (changed) {
