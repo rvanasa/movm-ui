@@ -342,7 +342,9 @@ export default function Workspace() {
   const onKeyDown = useCallback(
     (e, inEditor) => {
       const modifier = e.ctrlKey || e.metaKey;
-      if (modifier && e.shiftKey && e.key === 'f') {
+      if (e.key === 'Escape') {
+        setRunning(false);
+      } else if (modifier && e.shiftKey && e.key === 'f') {
         e.stopPropagation();
         e.preventDefault();
         editorRef.current?.getAction('editor.action.formatDocument').run();
