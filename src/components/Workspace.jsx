@@ -185,7 +185,7 @@ export default function Workspace() {
         } else if (typeof running === 'object') {
           const { lineNumber, column } = running;
 
-          const history = rust.history(detailed);
+          const history = rust.history();
           const span = getStateSpan(history[history.length - 1]);
           if (span) {
             const [start, end] = getStartEndFromSpan(span);
@@ -270,7 +270,7 @@ export default function Workspace() {
 
   const notify = useCallback(() => {
     try {
-      const history = rust.history(detailed);
+      const history = rust.history();
       setHistory(history);
       // setIndex(history.length - 1);
       setError(null);
@@ -278,7 +278,7 @@ export default function Workspace() {
       setError(err);
       console.error(err);
     }
-  }, [detailed]);
+  }, []);
 
   const evaluate = useCallback(
     (run) => {

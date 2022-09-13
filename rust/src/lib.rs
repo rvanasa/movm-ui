@@ -63,17 +63,17 @@ pub fn forward(detailed: bool) -> bool {
         match state {
             HistoryState::Core(mut core) => {
                 let limits = motoko::vm_types::Limits::none();
-                let redex_count = core.counts.step_redex;
+                let redex_count = core.counts.redex;
                 loop {
-                    if history.len() >= MAX_HISTORY_LENGTH {
-                        history.pop_front();
-                    };
                     let step = core.step(&limits);
-                    history.push_back(SendWrapper::new(match step {
-                        Ok(_) => HistoryState::Core(core.clone()),
-                        Err(ref end) => HistoryState::Interruption(end.clone()),
-                    }));
-                    if step.is_err() || core.counts.step_redex != redex_count {
+                    if detailed || step.is_err() || core.counts.redex != redex_count {
+                        if history.len() >= MAX_HISTORY_LENGTH {
+                            history.pop_front();
+                        };
+                        history.push_back(SendWrapper::new(match step {
+                            Ok(_) => HistoryState::Core(core.clone()),
+                            Err(ref end) => HistoryState::Interruption(end.clone()),
+                        }));
                         break;
                     }
                 }
@@ -98,30 +98,30 @@ pub fn backward() -> bool {
 }
 
 #[wasm_bindgen]
-pub fn history(detailed: bool) -> JsValue {
-    // let detailed = false; //temp
-
+pub fn history() -> JsValue {
     let history = &mut *HISTORY.lock().unwrap();
 
-    let result = if detailed {
-        history.iter().map(|c| c.clone().take()).collect::<Vec<_>>()
-    } else {
-        let mut result = vec![];
-        let mut redex_count = 0;
-        for (i, state) in history.iter().enumerate() {
-            let state = state.clone().take(); // TODO get reference and clone later
-            match state {
-                HistoryState::Core(ref core) => {
-                    if i == 0 || core.counts.step_redex > redex_count {
-                        redex_count = core.counts.step_redex;
-                        result.push(state)
-                    }
-                }
-                HistoryState::Interruption(_) => result.push(state),
-            }
-        }
-        result
-    };
+    let result = history.iter().map(|c| c.clone().take()).collect::<Vec<_>>();
+
+    // let result = if detailed {
+    //     history.iter().map(|c| c.clone().take()).collect::<Vec<_>>()
+    // } else {
+    //     let mut result = vec![];
+    //     let mut redex_count = 0;
+    //     for (i, state) in history.iter().enumerate() {
+    //         let state = state.clone().take(); // TODO get reference and clone later
+    //         match state {
+    //             HistoryState::Core(ref core) => {
+    //                 if i == 0 || core.counts.redex > redex_count {
+    //                     redex_count = core.counts.redex;
+    //                     result.push(state)
+    //                 }
+    //             }
+    //             HistoryState::Interruption(_) => result.push(state),
+    //         }
+    //     }
+    //     result
+    // };
 
     JsValue::from_serde(&result).unwrap()
 }
