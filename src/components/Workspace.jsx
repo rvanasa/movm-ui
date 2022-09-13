@@ -192,9 +192,9 @@ export default function Workspace() {
             const [start, end] = getStartEndFromSpan(span);
             if (
               start.lineNumber === lineNumber &&
-              end.lineNumber === lineNumber &&
+              end.lineNumber >= lineNumber &&
               start.column <= column &&
-              end.column >= column
+              (end.column >= column || end.lineNumber > lineNumber)
             ) {
               setRunning(false);
             }
@@ -436,9 +436,9 @@ export default function Workspace() {
             const [start, end] = getStartEndFromSpan(span);
             if (
               start.lineNumber === lineNumber &&
-              end.lineNumber === lineNumber &&
+              end.lineNumber >= lineNumber &&
               start.column <= column &&
-              end.column >= column &&
+              (end.column >= column || end.lineNumber > lineNumber) &&
               (modifier || width < bestWidth)
               //   (modifier ? width >= selectedWidth : width <= selectedWidth)
             ) {
@@ -511,7 +511,7 @@ export default function Workspace() {
                 type="checkbox"
                 className="mr-2"
                 checked={detailed}
-                onChange={() => setDetailed(!detailed)}
+                onChange={() => setRunning(false) & setDetailed(!detailed)}
               />
               <label htmlFor="toggle-detailed">Detail Mode</label>
             </div>
