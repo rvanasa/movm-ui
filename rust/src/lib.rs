@@ -9,7 +9,7 @@ use wasm_bindgen::prelude::*;
 use motoko::check::parse;
 use motoko::vm_types::{Core, Interruption};
 
-const MAX_HISTORY_LENGTH: usize = 100;
+const MAX_HISTORY_LENGTH: usize = 50;
 
 #[cfg(feature = "wee_alloc")]
 #[global_allocator]
