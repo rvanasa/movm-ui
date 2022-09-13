@@ -29,6 +29,7 @@ import { TransitionGroup } from 'react-transition-group';
 import CSSTransitionWrapper from './utils/CSSTransitionWrapper';
 import ResponsiveSplitPane from './utils/ResponsiveSplitPane';
 import jsonTheme from '../config/jsonTheme';
+import { useSessionStorage } from 'usehooks-ts';
 
 const defaultCode =
   `
@@ -129,7 +130,8 @@ export default function Workspace() {
   const [hoverIndex, setHoverIndex] = useState(null);
   const [frameHoverIndex, setFrameHoverIndex] = useState(null);
   const [frameIndex, setFrameIndex] = useState(null);
-  const [detailed, setDetailed] = useState(false);
+  // const [detailed, setDetailed] = useState(false);
+  const [detailed, setDetailed] = useSessionStorage('mo-vm.detailed', false);
 
   const setIndex = (index) => {
     setIndex_(index);
@@ -486,14 +488,14 @@ export default function Workspace() {
                 <span>VM</span>
               </div>
             </div>
-            <div className="w-full">
+            <div className="flex-grow overflow-auto">
               {error && !changed ? (
-                <pre className="overflow-y-scroll text-[20px] text-red-300 opacity-80 ml-10">
+                <pre className="text-[20px] text-red-300 opacity-80 ml-10">
                   {getSyntaxErrorDetails(error).message}
                 </pre>
               ) : (
                 mostRecentCore?.debug_print_out && (
-                  <pre className="overflow-y-scroll text-[30px] ml-10">
+                  <pre className="text-[30px] ml-10">
                     {
                       mostRecentCore?.debug_print_out[
                         mostRecentCore?.debug_print_out.length - 1
@@ -503,15 +505,16 @@ export default function Workspace() {
                 )
               )}
             </div>
-            <div className="flex items-center select-none whitespace-nowrap">
-              <input id="toggle-detailed" type="checkbox" className="mr-2" />
-              <label
-                for="toggle-detailed"
-                className="opacity-90"
-                value={detailed}
+            <div className="pl-3 flex items-center select-none whitespace-nowrap">
+              <input
+                id="toggle-detailed"
+                type="checkbox"
+                className="mr-2"
+                checked={detailed}
                 onChange={() => setDetailed(!detailed)}
-              >
-                Detailed Output
+              />
+              <label htmlFor="toggle-detailed" className="opacity-90">
+                Detail Mode
               </label>
             </div>
           </div>
@@ -598,6 +601,18 @@ export default function Workspace() {
                     ))}
                   </TransitionGroup>
                   <div className="flex">
+                    {/* <div className="px-3 flex items-center select-none whitespace-nowrap">
+                      <input
+                        id="toggle-detailed"
+                        type="checkbox"
+                        className="mr-2"
+                        value={detailed}
+                        onChange={() => setDetailed(!detailed)}
+                      />
+                      <label htmlFor="toggle-detailed" className="opacity-90">
+                        Detailed
+                      </label>
+                    </div> */}
                     {/* <Button onClick={() => setIndex(0)}>
                       <JumpLeft className="mr-[2px]" />
                     </Button> */}
