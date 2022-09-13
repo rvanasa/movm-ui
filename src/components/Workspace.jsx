@@ -559,7 +559,7 @@ export default function Workspace() {
                       </pre>
                     )}
                   </div>
-                  <TransitionGroup className="w-full flex overflow-x-scroll items-center">
+                  <TransitionGroup className="w-full flex overflow-x-auto items-center">
                     {history.map((state, i) => (
                       <CSSTransitionWrapper
                         key={i}
