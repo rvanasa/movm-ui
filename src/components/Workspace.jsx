@@ -521,11 +521,6 @@ export default function Workspace() {
             split="vertical"
             primary="first"
             defaultSize="60%"
-            style={{
-              // temp
-              height: 'calc(100% - 150px)',
-              overflowY: 'auto',
-            }}
           >
             <ResponsiveSplitPane
               split="horizontal"
