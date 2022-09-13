@@ -13,7 +13,6 @@
 ```sh
 git clone https://github.com/dfinity/motoko.rs
 git clone https://github.com/rvanasa/mo-vm
-
 cd mo-vm
 ```
 
