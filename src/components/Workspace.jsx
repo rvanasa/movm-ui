@@ -120,8 +120,8 @@ const getSyntaxErrorDetails = (err) => {
 };
 
 export default function Workspace() {
-  const [code, setCode] = useState(defaultCode);
-  const [lastCode, setLastCode] = useState(defaultCode);
+  const [code, setCode] = useSessionStorage('mo-vm.code', defaultCode);
+  const [lastCode, setLastCode] = useState(code);
   const [error, setError] = useState(null);
   // const history = rust.history();
   const [history, setHistory] = useState([]);
