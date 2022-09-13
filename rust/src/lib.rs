@@ -91,10 +91,28 @@ pub fn backward() -> bool {
 }
 
 #[wasm_bindgen]
-pub fn history() -> JsValue {
+pub fn history(detailed: bool) -> JsValue {
     let history = &mut *HISTORY.lock().unwrap();
 
-    let result = &history.iter().map(|c| c.clone().take()).collect::<Vec<_>>();
+    let result = if detailed {
+        history.iter().map(|c| c.clone().take()).collect::<Vec<_>>()
+    } else {
+        let mut result = vec![];
+        let mut redex_count = 0;
+        for (i, state) in history.iter().enumerate() {
+            let state = state.clone().take(); // TODO get reference and clone later
+            match state {
+                HistoryState::Core(ref core) => {
+                    if i == 0 || core.counts.step_redex > redex_count {
+                        redex_count = core.counts.step_redex;
+                        result.push(state)
+                    }
+                }
+                HistoryState::Interruption(_) => result.push(state),
+            }
+        }
+        result
+    };
 
-    JsValue::from_serde(result).unwrap()
+    JsValue::from_serde(&result).unwrap()
 }
