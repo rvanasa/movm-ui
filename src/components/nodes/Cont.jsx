@@ -12,8 +12,9 @@ export default function Cont({ node }) {
       style={{ padding: '1rem', background: 'rgba(0,0,0,0)' }}
       collapsed={3}
       displayDataTypes={false}
+      enableClipboard={false}
       theme={jsonTheme}
-    ></JsonView>
+    />
   );
 
   //   if (type === 'Taken') {

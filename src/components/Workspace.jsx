@@ -722,6 +722,7 @@ export default function Workspace() {
                     style={{ padding: '1rem', background: 'rgba(0,0,0,0)' }}
                     collapsed={2}
                     displayDataTypes={false}
+                    enableClipboard={false}
                     theme={jsonTheme}
                   />
                 )}
