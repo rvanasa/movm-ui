@@ -1,4 +1,4 @@
-const jsonTheme = 'shapeshifter';
+const jsonTheme = 'tomorrow';
 // const jsonTheme = {
 //   base00: '#F9F9F9',
 //   base01: '#E0E0E0',

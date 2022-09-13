@@ -719,7 +719,7 @@ export default function Workspace() {
                   <JsonView
                     src={selectedFrame ?? mostRecentCore}
                     name={null}
-                    style={{ padding: '1rem' }}
+                    style={{ padding: '1rem', background: 'rgba(0,0,0,0)' }}
                     collapsed={2}
                     displayDataTypes={false}
                     theme={jsonTheme}
