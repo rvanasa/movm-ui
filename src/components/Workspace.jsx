@@ -505,7 +505,7 @@ export default function Workspace() {
                 )
               )}
             </div>
-            <div className="pl-3 flex items-center select-none whitespace-nowrap opacity-[.9]">
+            <div className="px-3 flex items-center select-none whitespace-nowrap opacity-[.9]">
               <input
                 id="toggle-detailed"
                 type="checkbox"
