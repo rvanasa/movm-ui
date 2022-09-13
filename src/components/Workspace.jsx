@@ -505,7 +505,7 @@ export default function Workspace() {
                 )
               )}
             </div>
-            <div className="pl-3 flex items-center select-none whitespace-nowrap">
+            <div className="pl-3 flex items-center select-none whitespace-nowrap opacity-[.9]">
               <input
                 id="toggle-detailed"
                 type="checkbox"
@@ -513,9 +513,7 @@ export default function Workspace() {
                 checked={detailed}
                 onChange={() => setDetailed(!detailed)}
               />
-              <label htmlFor="toggle-detailed" className="opacity-90">
-                Detail Mode
-              </label>
+              <label htmlFor="toggle-detailed">Detail Mode</label>
             </div>
           </div>
           <hr className="w-full mt-5 mb-3" />
