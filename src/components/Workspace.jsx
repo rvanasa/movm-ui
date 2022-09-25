@@ -470,7 +470,7 @@ export default function Workspace() {
           <div className="flex items-center">
             <div
               className={classNames(
-                'flex items-center justify-center text-white text-center lowercase font-light w-[75px] aspect-square select-none cursor-pointer rounded',
+                'flex items-center justify-center text-white text-center lowercase font-light h-[75px] aspect-square select-none cursor-pointer rounded',
                 // 'transition-all duration-200',
                 error
                   ? 'bg-red-800'
