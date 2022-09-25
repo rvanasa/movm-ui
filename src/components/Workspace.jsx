@@ -29,7 +29,7 @@ import { TransitionGroup } from 'react-transition-group';
 import CSSTransitionWrapper from './utils/CSSTransitionWrapper';
 import ResponsiveSplitPane from './utils/ResponsiveSplitPane';
 import jsonTheme from '../config/jsonTheme';
-import { useSessionStorage } from 'usehooks-ts';
+import { useLocalStorage } from 'usehooks-ts';
 
 const defaultCode =
   `
@@ -120,7 +120,7 @@ const getSyntaxErrorDetails = (err) => {
 };
 
 export default function Workspace() {
-  const [code, setCode] = useSessionStorage('mo-vm.code', defaultCode);
+  const [code, setCode] = useLocalStorage('mo-vm.code', defaultCode);
   const [lastCode, setLastCode] = useState(code);
   const [error, setError] = useState(null);
   // const history = rust.history();
@@ -131,7 +131,7 @@ export default function Workspace() {
   const [frameHoverIndex, setFrameHoverIndex] = useState(null);
   const [frameIndex, setFrameIndex] = useState(null);
   // const [detailed, setDetailed] = useState(false);
-  const [detailed, setDetailed] = useSessionStorage('mo-vm.detailed', false);
+  const [detailed, setDetailed] = useLocalStorage('mo-vm.detailed', false);
 
   const setIndex = (index) => {
     setIndex_(index);
@@ -470,7 +470,7 @@ export default function Workspace() {
           <div className="flex items-center">
             <div
               className={classNames(
-                'flex items-center justify-center text-white text-center lowercase font-light w-[75px] aspect-square select-none cursor-pointer rounded',
+                'flex items-center justify-center text-white text-center lowercase font-light h-[75px] aspect-square select-none cursor-pointer rounded',
                 // 'transition-all duration-200',
                 error
                   ? 'bg-red-800'
