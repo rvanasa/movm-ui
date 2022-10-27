@@ -90,6 +90,7 @@ export default function CodeEditor({
         // scrollbar: {
         //   alwaysConsumeMouseWheel: false,
         // },
+        quickSuggestions: false,
         ...options,
       }}
       {...others}
