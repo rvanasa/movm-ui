@@ -168,7 +168,8 @@ export default function Workspace() {
     }
   }
 
-  const selectedFrame = selectedCore?.stack[frameHoverIndex ?? frameIndex];
+  const selectedFrame =
+    selectedCore?.agent.active.stack[frameHoverIndex ?? frameIndex];
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useMemo(() => setFrameIndex(null), [selectedState]);
@@ -553,7 +554,7 @@ export default function Workspace() {
                         )}
                       >
                         [
-                        {mostRecentCore?.counts
+                        {mostRecentCore?.agent.counts
                           .redex /* [detailed ? 'step' : 'redex'] */ ?? '-'}
                         ]
                       </pre>
@@ -662,7 +663,7 @@ export default function Workspace() {
             <div className="flex select-none">
               <TransitionGroup className="w-[150px] flex flex-col overflow-x-auto">
                 {!!selectedCore &&
-                  selectedCore.stack.map((frame, i) => (
+                  selectedCore.agent.active.stack.map((frame, i) => (
                     <CSSTransitionWrapper
                       key={i}
                       timeout={150}

@@ -63,10 +63,16 @@ pub fn forward(detailed: bool) -> bool {
         match state {
             HistoryState::Core(mut core) => {
                 let limits = motoko::vm_types::Limits::none();
-                let redex_count = core.counts.redex;
+                let redex_count = core.agent.counts.redex;
                 loop {
                     let step = core.step(&limits);
-                    if detailed || step.is_err() || core.counts.redex != redex_count {
+                    log(&format!("{:?}", step));
+                    let cont_loop = match &step {
+                        Ok(_) => true,
+                        Err(Interruption::Breakpoint(..)) => false,
+                        Err(i) => i.is_recoverable()
+                    };
+                    if detailed || !cont_loop || core.agent.counts.redex != redex_count {
                         if history.len() >= MAX_HISTORY_LENGTH {
                             history.pop_front();
                         };
