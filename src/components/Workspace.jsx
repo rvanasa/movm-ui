@@ -498,9 +498,9 @@ export default function Workspace() {
                 mostRecentCore?.debug_print_out && (
                   <pre className="text-[20px] ml-10">
                     {
-                      mostRecentCore?.debug_print_out[
-                        mostRecentCore?.debug_print_out.length - 1
-                      ]
+                      mostRecentCore.debug_print_out[
+                        mostRecentCore.debug_print_out.length - 1
+                      ]?.text
                     }
                   </pre>
                 )
