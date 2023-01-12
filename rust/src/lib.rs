@@ -4,6 +4,7 @@ use std::sync::Mutex;
 use lazy_static::lazy_static;
 use send_wrapper::SendWrapper;
 use serde::{Deserialize, Serialize};
+use serde_wasm_bindgen::to_value;
 use wasm_bindgen::prelude::*;
 
 use motoko::check::parse;
@@ -50,7 +51,7 @@ pub fn set_input(input: &str) -> JsValue {
             history.push_back(SendWrapper::new(HistoryState::Core(core)));
             JsValue::undefined()
         }
-        Err(err) => JsValue::from_serde(&err).unwrap(),
+        Err(err) => to_value(&err).unwrap(),
     }
 }
 
@@ -70,7 +71,7 @@ pub fn forward(detailed: bool) -> bool {
                     let cont_loop = match &step {
                         Ok(_) => true,
                         Err(Interruption::Breakpoint(..)) => false,
-                        Err(i) => i.is_recoverable()
+                        Err(i) => i.is_recoverable(),
                     };
                     if detailed || !cont_loop || core.agent.counts.redex != redex_count {
                         if history.len() >= MAX_HISTORY_LENGTH {
@@ -129,5 +130,5 @@ pub fn history() -> JsValue {
     //     result
     // };
 
-    JsValue::from_serde(&result).unwrap()
+    to_value(&result).unwrap()
 }
