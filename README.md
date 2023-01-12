@@ -1,6 +1,6 @@
-# Motoko VM
+# Motoko VM Explorer
 
-> ### An online Motoko virtual machine.
+> ### An interactive online environment for the [Motoko VM](https://github.com/dfinity/motoko.rs).
 
 #### [Online Demo](https://mo-vm.netlify.app/)
 
