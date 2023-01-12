@@ -23,10 +23,7 @@ Make sure that `motoko.rs` and `mo-vm` are in the same parent directory.
 Run the following commands (in `mo-vm/`):
 
 ```sh
-# Update package.json dependencies
-npm ci
-# Compile WebAssembly
-npm run build
-# Run the development server (localhost:3000)
-npm start
+npm ci # Install package.json dependencies
+npm run build # Compile WebAssembly
+npm start # Run the development server (http://localhost:3000)
 ```
