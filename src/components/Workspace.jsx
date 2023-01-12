@@ -34,7 +34,7 @@ import { useLocalStorage } from 'usehooks-ts';
 const defaultCode =
   `
 let a = 1;
-(prim "debugPrint") "Hello, VM!";
+(prim "print") "Hello, VM!";
 a + 1;
 `.trim() + '\n';
 
@@ -498,9 +498,9 @@ export default function Workspace() {
                 mostRecentCore?.debug_print_out && (
                   <pre className="text-[20px] ml-10">
                     {
-                      mostRecentCore?.debug_print_out[
-                        mostRecentCore?.debug_print_out.length - 1
-                      ]
+                      mostRecentCore.debug_print_out[
+                        mostRecentCore.debug_print_out.length - 1
+                      ]?.text
                     }
                   </pre>
                 )
@@ -651,9 +651,9 @@ export default function Workspace() {
                       <Interruption node={selectedInterruption} />
                     </div>
                   ) : (
-                    !!selectedCore?.cont && (
+                    !!selectedCore?.agent?.active?.cont && (
                       <div className={'text-green-400'}>
-                        <Cont node={selectedCore.cont} />
+                        <Cont node={selectedCore.agent.active.cont} />
                       </div>
                     )
                   )}
@@ -716,12 +716,12 @@ export default function Workspace() {
                   ))}
               </TransitionGroup>
               <div className={classNames('w-full text-lg', pendingClassNames)}>
-                {!!mostRecentCore && (
+                {!!(selectedFrame || mostRecentCore) && (
                   <JsonView
-                    src={selectedFrame ?? mostRecentCore}
+                    src={selectedFrame || mostRecentCore}
                     name={null}
                     style={{ padding: '1rem', background: 'rgba(0,0,0,0)' }}
-                    collapsed={2}
+                    collapsed={3}
                     displayDataTypes={false}
                     enableClipboard={false}
                     theme={jsonTheme}
