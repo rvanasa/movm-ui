@@ -57,12 +57,12 @@ const getCoreSpan = (core) => {
   if (!core) {
     return;
   }
-  let source = core.cont_source;
+  let source = core.agent.active.cont_source;
   if (!source) {
     return;
   }
   // ExpStep
-  if (source.source) {
+  while (source.source) {
     source = source.source;
   }
   return source.span;
