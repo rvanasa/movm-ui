@@ -12,15 +12,15 @@
 
 ```sh
 git clone https://github.com/dfinity/motoko.rs
-git clone https://github.com/rvanasa/mo-vm
-cd mo-vm
+git clone https://github.com/rvanasa/movm-ui
+cd movm-ui
 ```
 
-Make sure that `motoko.rs` and `mo-vm` are in the same parent directory.
+Make sure that `motoko.rs` and `movm-ui` are in the same parent directory.
 
 ### Build and run:
 
-Run the following commands (in `mo-vm/`):
+Run the following commands (in `movm-ui/`):
 
 ```sh
 npm ci # Install package.json dependencies
