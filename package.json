@@ -43,7 +43,8 @@
     "react-split-pane": "0.1.92",
     "react-tooltip": "4.2.21",
     "react-transition-group": "4.4.5",
-    "usehooks-ts": "2.6.0"
+    "usehooks-ts": "2.6.0",
+    "util": "^0.12.5"
   },
   "devDependencies": {
     "@netlify/functions": "1.0.0",

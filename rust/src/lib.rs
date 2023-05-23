@@ -44,7 +44,8 @@ pub fn start() {
 pub fn set_input(input: &str) -> JsValue {
     match parse(&input) {
         Ok(prog) => {
-            let core = Core::new(prog);
+            let mut core = Core::new(prog);
+            core.load_base().unwrap();
 
             let history = &mut *HISTORY.lock().unwrap();
             history.clear();
